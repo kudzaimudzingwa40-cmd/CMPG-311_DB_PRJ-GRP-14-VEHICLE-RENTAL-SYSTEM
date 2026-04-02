@@ -1,0 +1,2 @@
+# CMPG 311_DB_PRJ_GRP 14-VEHICLE RENTAL SYSTEM (DriveFlow Rentals)
+DriveFlow Rentals’ mission is to provide customers with a highly-efficient and digital vehicle rental  and procurement solution. DriveFlow Rentals aims to replace the use of paper-only tracking  systems with a centralised database that ensures the 100% integrity of the company’s data.  Through its platform, DriveFlow Rentals aims to provide customers with an easy to use, reliable and  fully digital rental experience for their vehicles. 
