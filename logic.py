@@ -9,7 +9,7 @@ import os, string, random, csv, io
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "driveflow-secret-2026")
 
-# ── Decorators ──────────────────────────────────────────────────────────────
+#  Decorators route
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -40,7 +40,7 @@ def staff_required(f):
 def gen_ref(prefix="DRV"):
     return prefix + "-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-# ── Public ───────────────────────────────────────────────────────────────────
+# Public route
 @app.route("/")
 def index():
     db = get_db()
@@ -80,7 +80,7 @@ def vehicle_detail(vehicle_id):
     db.close()
     return render_template("vehicle_detail.html", vehicle=vehicle, reviews=reviews, avg_rating=avg)
 
-# ── Auth ─────────────────────────────────────────────────────────────────────
+# Auth route
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -131,7 +131,7 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for("index"))
 
-# ── Customer Dashboard ───────────────────────────────────────────────────────
+#  Customer Dashboard route
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -157,7 +157,7 @@ def dashboard():
     return render_template("dashboard.html", bookings=bookings,
         all_penalties=all_penalties, points_history=points_history, user=user)
 
-# ── Profile ──────────────────────────────────────────────────────────────────
+#  Profile 
 @app.route("/profile", methods=["GET","POST"])
 @login_required
 def profile():
@@ -190,7 +190,7 @@ def profile():
     db.close()
     return render_template("profile.html", user=user)
 
-# ── Promo code validator ─────────────────────────────────────────────────────
+#  Promo code validator 
 @app.route("/api/promo/<code>")
 @login_required
 def validate_promo(code):
@@ -206,7 +206,7 @@ def validate_promo(code):
                         "description":promo["description"],"min_amount":promo["min_booking_amount"]})
     return jsonify({"valid":False})
 
-# ── Book ─────────────────────────────────────────────────────────────────────
+#  Book 
 @app.route("/book/<int:vehicle_id>", methods=["GET","POST"])
 @login_required
 def book(vehicle_id):
@@ -289,7 +289,7 @@ def book(vehicle_id):
     db.close()
     return render_template("book.html", vehicle=vehicle, user=user)
 
-# ── Cancel booking ───────────────────────────────────────────────────────────
+#  Cancel booking 
 @app.route("/cancel/<int:booking_id>", methods=["POST"])
 @login_required
 def cancel_booking(booking_id):
@@ -312,7 +312,7 @@ def cancel_booking(booking_id):
     db.close()
     return redirect(url_for("dashboard"))
 
-# ── Extend booking ───────────────────────────────────────────────────────────
+# Extend booking 
 @app.route("/extend/<int:booking_id>", methods=["GET","POST"])
 @login_required
 def extend_booking(booking_id):
@@ -353,7 +353,7 @@ def extend_booking(booking_id):
     db.close()
     return render_template("extend_booking.html", booking=b)
 
-# ── Waitlist ─────────────────────────────────────────────────────────────────
+#  Waitlist 
 @app.route("/waitlist/<int:vehicle_id>", methods=["POST"])
 @login_required
 def join_waitlist(vehicle_id):
@@ -365,7 +365,7 @@ def join_waitlist(vehicle_id):
     flash("You've been added to the waitlist. We'll notify you when this vehicle becomes available.", "success")
     return redirect(url_for("dashboard"))
 
-# ── Payment ──────────────────────────────────────────────────────────────────
+# Payment 
 @app.route("/pay/<int:booking_id>", methods=["GET","POST"])
 @login_required
 def payment(booking_id):
@@ -404,7 +404,7 @@ def payment(booking_id):
     db.close()
     return render_template("payment.html", booking=b)
 
-# ── Receipt ──────────────────────────────────────────────────────────────────
+# Receipt 
 @app.route("/receipt/<int:booking_id>")
 @login_required
 def receipt(booking_id):
@@ -421,7 +421,7 @@ def receipt(booking_id):
         flash("Receipt not found.", "error"); return redirect(url_for("dashboard"))
     return render_template("receipt.html", booking=b, payment=payment)
 
-# ── Reviews ──────────────────────────────────────────────────────────────────
+# Reviews 
 @app.route("/review/<int:booking_id>", methods=["GET","POST"])
 @login_required
 def submit_review(booking_id):
@@ -452,7 +452,7 @@ def submit_review(booking_id):
     db.close()
     return render_template("submit_review.html", booking=b)
 
-# ── Penalties (customer) ─────────────────────────────────────────────────────
+#  Penalties (customer) 
 @app.route("/penalties")
 @login_required
 def my_penalties():
@@ -509,7 +509,7 @@ def pay_penalty(penalty_id):
     db.close()
     return render_template("pay_penalty.html", penalty=penalty)
 
-# ── Export bookings CSV ──────────────────────────────────────────────────────
+#  Export bookings CSV 
 @app.route("/export/bookings")
 @login_required
 def export_my_bookings():
@@ -623,7 +623,7 @@ def admin_dashboard():
     return render_template("admin/dashboard.html", stats=stats,
         recent_bookings=recent_bookings, monthly_chart=list(reversed(monthly_chart)))
 
-# ── Admin Fleet ──────────────────────────────────────────────────────────────
+# Admin Fleet 
 @app.route("/admin/fleet")
 @login_required
 @admin_required
@@ -698,7 +698,7 @@ def update_vehicle_status(vehicle_id):
     flash(f"Status updated to {ns}.", "success")
     return redirect(url_for("admin_fleet"))
 
-# ── Admin Bookings ───────────────────────────────────────────────────────────
+# Admin Bookings 
 @app.route("/admin/bookings")
 @login_required
 @admin_required
@@ -844,7 +844,7 @@ def admin_all_penalties():
     db.close()
     return render_template("admin/penalties.html", penalties=penalties, status_filter=sf, total_outstanding=outstanding)
 
-# ── Admin Customers ──────────────────────────────────────────────────────────
+#Admin Customers 
 @app.route("/admin/customers")
 @login_required
 @admin_required
@@ -921,7 +921,7 @@ def admin_delete_customer(user_id):
     audit(session["user_id"],"DELETE_CUSTOMER","users",uid,action)
     return redirect(url_for("admin_customers"))
 
-# ── Admin Promo Codes ────────────────────────────────────────────────────────
+#Admin Promo Codes 
 @app.route("/admin/promos")
 @login_required
 @admin_required
@@ -963,7 +963,7 @@ def admin_toggle_promo(pid):
     db.close()
     return redirect(url_for("admin_promos"))
 
-# ── Admin Reports ────────────────────────────────────────────────────────────
+#Admin Reports 
 @app.route("/admin/reports")
 @login_required
 @admin_required
@@ -999,7 +999,7 @@ def admin_reports():
         top_vehicles=top_vehicles, top_customers=top_customers,
         utilisation=utilisation, outstanding_debt=outstanding_debt)
 
-# ── Admin CSV Exports ────────────────────────────────────────────────────────
+#Admin CSV Exports 
 @app.route("/admin/export/<report_type>")
 @login_required
 @admin_required
@@ -1044,7 +1044,7 @@ def admin_export_csv(report_type):
     resp.headers["Content-Type"] = "text/csv"
     return resp
 
-# ── Admin Maintenance ────────────────────────────────────────────────────────
+#Admin Maintenance 
 @app.route("/admin/maintenance")
 @login_required
 @admin_required
@@ -1081,7 +1081,7 @@ def admin_add_maintenance():
     flash("Maintenance log added.", "success")
     return redirect(url_for("admin_maintenance"))
 
-# ── Admin Audit Log ──────────────────────────────────────────────────────────
+#Admin Audit Log 
 @app.route("/admin/audit")
 @login_required
 @admin_required
@@ -1103,7 +1103,7 @@ def admin_audit():
     return render_template("admin/audit.html", logs=logs, page=page,
         per_pg=per_pg, total=total, entity_filter=entity_filter, entities=entities)
 
-# ── Admin Invoice PDF ────────────────────────────────────────────────────────
+#Admin Invoice PDF
 @app.route("/admin/invoice/<int:booking_id>")
 @login_required
 @admin_required
