@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DriveFlow — Admin Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#f0f5ff;--navy2:#ffffff;--navy3:#e8f0fe;--navy4:#dbeafe;
+  --blue:#1a6fc4;--blue2:#2182e0;--blue3:#4fa3f7;
+  --accent:#1a6fc4;--accent2:#2182e0;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;
+  --border:rgba(26,111,196,0.13);--border2:rgba(26,111,196,0.25);
+  --success:#16a34a;--warning:#d97706;--danger:#dc2626;--purple:#7c3aed;
+  --card:#ffffff;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+html,body{height:100%;background:var(--navy);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
+
+/* ── LOGIN ── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f0fe 0%,#dbeafe 100%);position:relative;overflow:hidden}
+#loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(26,111,196,0.12) 0%,transparent 70%)}
+.login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(26,111,196,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(26,111,196,.06) 1px,transparent 1px);background-size:40px 40px}
+.login-box{position:relative;z-index:1;background:#ffffff;border:1px solid var(--border2);border-radius:16px;padding:2.5rem 2.25rem;width:380px;box-shadow:0 8px 32px rgba(26,111,196,0.12)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.login-icon{width:40px;height:40px;background:var(--blue2);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+.login-brand{font-size:1.1rem;font-weight:600;color:var(--text)}
+.login-sub{font-size:.72rem;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-top:1px}
+.login-title{font-size:1.25rem;font-weight:600;color:var(--text);margin-bottom:.35rem}
+.login-desc{font-size:.8rem;color:var(--text3);margin-bottom:1.75rem}
+.field{margin-bottom:1.1rem}
+.field label{display:block;font-size:.75rem;color:var(--text3);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;background:#f8faff;border:1px solid var(--border2);border-radius:8px;padding:.65rem .9rem;color:var(--text);font-family:var(--font);font-size:.85rem;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--text3)}
+.login-hint{font-size:.72rem;color:var(--text3);margin-bottom:1.25rem;background:rgba(79,163,247,.06);border:1px solid var(--border);border-radius:6px;padding:.55rem .85rem}
+.login-hint span{color:var(--accent2)}
+.btn-login{width:100%;background:var(--blue2);border:none;border-radius:8px;padding:.75rem;color:#fff;font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-login:hover{background:var(--blue3)}
+.login-error{color:#f87171;font-size:.75rem;margin-top:.6rem;display:none;text-align:center}
+
+/* ── APP SHELL ── */
+#appShell{display:none;height:100vh;overflow:hidden}
+.layout{display:grid;grid-template-columns:220px 1fr;height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{background:#ffffff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;box-shadow:2px 0 8px rgba(26,111,196,0.06)}
+.sidebar-brand{padding:1.25rem 1.1rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.brand-logo{display:flex;align-items:center;gap:10px}
+.brand-icon{width:34px;height:34px;background:var(--blue2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.brand-name{font-size:.95rem;font-weight:600;color:var(--text)}
+.brand-sub{font-size:.65rem;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-top:1px}
+.sidebar-scroll{flex:1;overflow-y:auto;padding-bottom:.5rem}
+.sidebar-scroll::-webkit-scrollbar{width:3px}
+.sidebar-scroll::-webkit-scrollbar-track{background:transparent}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.sidebar-section{padding:.75rem 1.1rem .2rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem 1.1rem;color:var(--text2);text-decoration:none;font-size:.8rem;font-weight:500;border-left:2px solid transparent;transition:all .15s;cursor:pointer;user-select:none}
+.nav-item:hover{color:var(--blue2);background:rgba(26,111,196,.06);border-left-color:rgba(26,111,196,.3)}
+.nav-item.active{color:var(--blue2);background:rgba(26,111,196,.1);border-left-color:var(--blue2)}
+.nav-item i{font-size:16px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:.62rem;padding:1px 6px;border-radius:10px;font-weight:600}
+.nav-badge.red{background:rgba(239,68,68,.18);color:#f87171}
+.nav-badge.blue{background:rgba(79,163,247,.18);color:var(--accent2)}
+.sidebar-footer{border-top:1px solid var(--border);padding:.9rem 1.1rem;flex-shrink:0}
+.admin-profile{display:flex;align-items:center;gap:.6rem}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a6fc4,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:600;color:#fff;flex-shrink:0}
+.admin-name{font-size:.78rem;font-weight:600;color:var(--text)}
+.admin-role{font-size:.66rem;color:var(--text3)}
+.logout-btn{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;padding:.2rem;border-radius:4px;transition:color .15s;font-size:16px}
+.logout-btn:hover{color:#f87171}
+
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#ffffff;border-bottom:1px solid var(--border);padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 6px rgba(26,111,196,0.06)}
+.page-title{font-size:1rem;font-weight:600;color:var(--text)}
+.page-sub{font-size:.72rem;color:var(--text3);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:.6rem}
+.topbar-btn{background:rgba(79,163,247,.07);border:1px solid var(--border2);color:var(--text2);padding:.35rem .75rem;border-radius:7px;font-size:.75rem;cursor:pointer;display:flex;align-items:center;gap:.35rem;transition:all .15s;font-family:var(--font)}
+.topbar-btn:hover{background:rgba(79,163,247,.14);color:var(--accent)}
+.notif-wrap{position:relative;display:inline-flex}
+.notif-dot{width:6px;height:6px;background:var(--danger);border-radius:50%;position:absolute;top:3px;right:3px}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:1.25rem 1.5rem}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-track{background:transparent}
+.content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── PAGES ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.25rem}
+.stat-card{background:#ffffff;border:1px solid var(--border);border-radius:11px;padding:1rem 1.1rem;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(26,111,196,0.06)}
+.stat-top-bar{position:absolute;top:0;left:0;right:0;height:2px}
+.stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:.65rem}
+.stat-icon.blue{background:rgba(33,130,224,.15);color:var(--blue3)}
+.stat-icon.green{background:rgba(34,197,94,.12);color:var(--success)}
+.stat-icon.amber{background:rgba(245,158,11,.12);color:var(--warning)}
+.stat-icon.purple{background:rgba(167,139,250,.12);color:var(--purple)}
+.stat-label{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
+.stat-value{font-size:1.5rem;font-weight:700;color:var(--text);line-height:1}
+.stat-change{font-size:.68rem;margin-top:.35rem}
+.stat-change.up{color:var(--success)}
+.stat-change.down{color:var(--danger)}
+
+/* ── PANELS ── */
+.row2{display:grid;grid-template-columns:1.65fr 1fr;gap:.9rem;margin-bottom:.9rem}
+.row3{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.panel{background:#ffffff;border:1px solid var(--border);border-radius:11px;overflow:hidden;box-shadow:0 2px 8px rgba(26,111,196,0.06)}
+.panel-head{padding:.8rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:.82rem;font-weight:600;color:var(--text)}
+.panel-action{font-size:.7rem;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;font-family:var(--font)}
+.panel-action:hover{color:var(--accent2)}
+
+/* ── BAR CHART ── */
+.chart-area{padding:1rem 1.1rem}
+.bar-chart{display:flex;align-items:flex-end;gap:7px;height:120px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar{width:100%;border-radius:3px 3px 0 0;background:rgba(26,111,196,.15);border:1px solid rgba(26,111,196,.3);transition:background .2s;min-height:4px;cursor:pointer}
+.bar:hover,.bar.hi{background:rgba(26,111,196,.45);border-color:var(--blue2)}
+.bar-label{font-size:.62rem;color:var(--text3)}
+.bar-val{font-size:.62rem;color:var(--accent2)}
+
+/* ── ACTIVITY ── */
+.activity-list{padding:.25rem 0}
+.activity-item{display:flex;align-items:flex-start;gap:.65rem;padding:.55rem 1.1rem;border-bottom:1px solid rgba(79,163,247,.05)}
+.activity-item:last-child{border-bottom:none}
+.act-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.act-dot.green{background:var(--success)}
+.act-dot.blue{background:var(--blue3)}
+.act-dot.amber{background:var(--warning)}
+.act-dot.red{background:var(--danger)}
+.act-text{font-size:.75rem;color:var(--text2);line-height:1.4}
+.act-time{font-size:.65rem;color:var(--text3);margin-top:1px}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+th{padding:.55rem 1rem;text-align:left;font-size:.67rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+tbody tr{border-bottom:1px solid rgba(79,163,247,.04);transition:background .12s;cursor:pointer}
+tbody tr:hover{background:rgba(79,163,247,.04)}
+td{padding:.6rem 1rem;font-size:.76rem;color:var(--text2)}
+td.name{color:var(--text);font-weight:500}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:.62rem;font-weight:600;letter-spacing:.03em}
+.badge.confirmed{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.badge.pending{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.badge.cancelled{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.18)}
+.badge.returned{background:rgba(79,163,247,.1);color:var(--accent2);border:1px solid rgba(79,163,247,.2)}
+
+/* ── FLEET ── */
+.fleet-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;padding:.9rem}
+.fleet-item{background:#f8faff;border:1px solid var(--border);border-radius:7px;padding:.65rem .9rem;display:flex;align-items:center;justify-content:space-between}
+.fleet-name{font-size:.75rem;font-weight:500;color:var(--text)}
+.fleet-plate{font-size:.65rem;color:var(--text3);margin-top:1px;font-family:var(--mono)}
+.fleet-status{font-size:.63rem;font-weight:600;padding:2px 7px;border-radius:10px}
+.fleet-status.available{background:rgba(34,197,94,.1);color:#4ade80}
+.fleet-status.rented{background:rgba(79,163,247,.1);color:var(--accent2)}
+.fleet-status.maintenance{background:rgba(245,158,11,.1);color:#fbbf24}
+
+/* ── CUSTOMERS PAGE ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
+.page-heading{font-size:1rem;font-weight:600;color:var(--text)}
+.page-count{font-size:.75rem;color:var(--text3);margin-top:2px}
+.btn-primary{background:var(--blue2);border:none;border-radius:7px;padding:.5rem 1rem;color:#fff;font-family:var(--font);font-size:.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:background .15s}
+.btn-primary:hover{background:var(--blue3)}
+.full-panel{background:#ffffff;border:1px solid var(--border);border-radius:11px;overflow:hidden;box-shadow:0 2px 8px rgba(26,111,196,0.06)}
+
+/* ── REPORTS PAGE ── */
+.reports-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-bottom:1.1rem}
+.report-card{background:#ffffff;border:1px solid var(--border);border-radius:11px;padding:1.1rem 1.25rem;box-shadow:0 2px 8px rgba(26,111,196,0.06)}
+.report-label{font-size:.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
+.report-value{font-size:1.6rem;font-weight:700;color:var(--text)}
+.report-sub{font-size:.72rem;color:var(--text3);margin-top:.3rem}
+
+/* ── SETTINGS PAGE ── */
+.settings-section{background:#ffffff;border:1px solid var(--border);border-radius:11px;margin-bottom:.9rem;overflow:hidden;box-shadow:0 2px 8px rgba(26,111,196,0.06)}
+.settings-section-head{padding:.85rem 1.25rem;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text);background:#f8faff}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid rgba(79,163,247,.05)}
+.settings-row:last-child{border-bottom:none}
+.settings-label{font-size:.8rem;color:var(--text)}
+.settings-desc{font-size:.7rem;color:var(--text3);margin-top:1px}
+.toggle{width:36px;height:20px;background:rgba(79,163,247,.15);border:1px solid var(--border2);border-radius:10px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--blue2);border-color:var(--blue2)}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .2s}
+.toggle.on::after{left:18px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-grid"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-icon"><i class="ti ti-car"></i></div>
+      <div>
+        <div class="login-brand">DriveFlow</div>
+        <div class="login-sub">Admin Portal</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-desc">Sign in to access the admin dashboard</div>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="loginEmail" placeholder="admin@driveflow.co.za" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" />
+    </div>
+    <div class="login-hint">Demo credentials &nbsp;→&nbsp; <span>admin@driveflow.co.za</span> / <span>admin123</span></div>
+    <button class="btn-login" onclick="doLogin()"><i class="ti ti-login"></i> Sign in</button>
+    <div class="login-error" id="loginError">Incorrect email or password. Please try again.</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell">
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <div class="brand-icon"><i class="ti ti-car"></i></div>
+          <div>
+            <div class="brand-name">DriveFlow</div>
+            <div class="brand-sub">Admin Portal</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-scroll">
+        <div class="sidebar-section">Main</div>
+        <div class="nav-item active" onclick="showPage('overview',this)"><i class="ti ti-layout-dashboard"></i> Overview</div>
+        <div class="nav-item" onclick="showPage('bookings',this)"><i class="ti ti-calendar"></i> Bookings <span class="nav-badge red">3</span></div>
+        <div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i> Fleet</div>
+        <div class="nav-item" onclick="showPage('customers',this)"><i class="ti ti-users"></i> Customers</div>
+        <div class="sidebar-section">Finance</div>
+        <div class="nav-item" onclick="showPage('reports',this)"><i class="ti ti-chart-bar"></i> Revenue & Reports</div>
+        <div class="nav-item" onclick="showPage('penalties',this)"><i class="ti ti-alert-circle"></i> Penalties <span class="nav-badge red">5</span></div>
+        <div class="sidebar-section">System</div>
+        <div class="nav-item" onclick="showPage('settings',this)"><i class="ti ti-settings"></i> Settings</div>
+        <div class="nav-item" onclick="showPage('notifications',this)"><i class="ti ti-bell"></i> Notifications <span class="nav-badge blue">2</span></div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="admin-profile">
+          <div class="avatar" id="avatarInitials">AD</div>
+          <div>
+            <div class="admin-name" id="adminName">Admin User</div>
+            <div class="admin-role">Super Administrator</div>
+          </div>
+          <button class="logout-btn" onclick="doLogout()" title="Logout"><i class="ti ti-logout"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="topbar">
+        <div>
+          <div class="page-title" id="topbarTitle">Dashboard Overview</div>
+          <div class="page-sub" id="topbarSub">DriveFlow Rentals — Administrative View</div>
+        </div>
+        <div class="topbar-right">
+          <button class="topbar-btn"><i class="ti ti-download"></i> Export</button>
+          <button class="topbar-btn notif-wrap"><i class="ti ti-bell"></i><span class="notif-dot"></span></button>
+          <button class="topbar-btn" onclick="doLogout()"><i class="ti ti-logout"></i> Logout</button>
+        </div>
+      </div>
+
+      <div class="content">
+
+        <!-- OVERVIEW PAGE -->
+        <div class="page active" id="page-overview">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-top-bar" style="background:var(--blue2)"></div>
+              <div class="stat-icon blue"><i class="ti ti-car"></i></div>
+              <div class="stat-label">Total Fleet</div>
+              <div class="stat-value">24</div>
+              <div class="stat-change up"><i class="ti ti-arrow-up"></i> 2 added this month</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-top-bar" style="background:var(--success)"></div>
+              <div class="stat-icon green"><i class="ti ti-check"></i></div>
+              <div class="stat-label">Active Bookings</div>
+              <div class="stat-value">11</div>
+              <div class="stat-change up"><i class="ti ti-arrow-up"></i> 18% vs last week</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-top-bar" style="background:var(--warning)"></div>
+              <div class="stat-icon amber"><i class="ti ti-currency-dollar"></i></div>
+              <div class="stat-label">Monthly Revenue</div>
+              <div class="stat-value">R84k</div>
+              <div class="stat-change up"><i class="ti ti-arrow-up"></i> 12% vs last month</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-top-bar" style="background:var(--purple)"></div>
+              <div class="stat-icon purple"><i class="ti ti-users"></i></div>
+              <div class="stat-label">Customers</div>
+              <div class="stat-value">148</div>
+              <div class="stat-change up"><i class="ti ti-arrow-up"></i> 9 new this week</div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Revenue — last 7 months</div>
+                <button class="panel-action" onclick="showPage('reports',document.querySelector('[onclick*=reports]'))">Full report →</button>
+              </div>
+              <div class="chart-area">
+                <div class="bar-chart" id="barChart"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Recent activity</div>
+                <button class="panel-action">View all</button>
+              </div>
+              <div class="activity-list">
+                <div class="activity-item"><div class="act-dot green"></div><div><div class="act-text">New booking — Toyota Fortuner by Sipho M.</div><div class="act-time">2 min ago</div></div></div>
+                <div class="activity-item"><div class="act-dot amber"></div><div><div class="act-text">Payment pending — BMW 3 Series #BK0412</div><div class="act-time">14 min ago</div></div></div>
+                <div class="activity-item"><div class="act-dot blue"></div><div><div class="act-text">Vehicle returned — VW Polo #BK0409</div><div class="act-time">1 hr ago</div></div></div>
+                <div class="activity-item"><div class="act-dot red"></div><div><div class="act-text">Penalty issued — late return, R350</div><div class="act-time">3 hrs ago</div></div></div>
+                <div class="activity-item"><div class="act-dot green"></div><div><div class="act-text">New customer registered — Lerato K.</div><div class="act-time">5 hrs ago</div></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="row3">
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Recent bookings</div><button class="panel-action" onclick="showPage('bookings',document.querySelector('[onclick*=bookings]'))">Manage →</button></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Customer</th><th>Vehicle</th><th>Amount</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td class="name">Sipho M.</td><td>Toyota Fortuner</td><td style="color:#4ade80;font-weight:600">R4 200</td><td><span class="badge confirmed">Confirmed</span></td></tr>
+                    <tr><td class="name">Lerato K.</td><td>BMW 3 Series</td><td style="color:#fbbf24;font-weight:600">R6 800</td><td><span class="badge pending">Pending</span></td></tr>
+                    <tr><td class="name">Tebogo N.</td><td>VW Polo</td><td style="color:var(--text2);font-weight:600">R2 100</td><td><span class="badge returned">Returned</span></td></tr>
+                    <tr><td class="name">Amahle D.</td><td>Mercedes C-Class</td><td style="color:#f87171;font-weight:600">R9 500</td><td><span class="badge cancelled">Cancelled</span></td></tr>
+                    <tr><td class="name">Kgosi P.</td><td>Hyundai Tucson</td><td style="color:#4ade80;font-weight:600">R3 600</td><td><span class="badge confirmed">Confirmed</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Fleet status</div><button class="panel-action" onclick="showPage('fleet',document.querySelector('[onclick*=fleet]'))">Manage →</button></div>
+              <div class="fleet-grid">
+                <div class="fleet-item"><div><div class="fleet-name">Toyota Fortuner</div><div class="fleet-plate">CA 123-456</div></div><span class="fleet-status rented">Rented</span></div>
+                <div class="fleet-item"><div><div class="fleet-name">BMW 3 Series</div><div class="fleet-plate">GP 789-012</div></div><span class="fleet-status available">Available</span></div>
+                <div class="fleet-item"><div><div class="fleet-name">VW Polo</div><div class="fleet-plate">WC 345-678</div></div><span class="fleet-status available">Available</span></div>
+                <div class="fleet-item"><div><div class="fleet-name">Mercedes C-Class</div><div class="fleet-plate">GP 901-234</div></div><span class="fleet-status maintenance">Service</span></div>
+                <div class="fleet-item"><div><div class="fleet-name">Hyundai Tucson</div><div class="fleet-plate">KZN 567-890</div></div><span class="fleet-status rented">Rented</span></div>
+                <div class="fleet-item"><div><div class="fleet-name">Audi A4</div><div class="fleet-plate">GP 234-567</div></div><span class="fleet-status available">Available</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOOKINGS PAGE -->
+        <div class="page" id="page-bookings">
+          <div class="page-header">
+            <div><div class="page-heading">All Bookings</div><div class="page-count">Showing 8 of 42 bookings</div></div>
+          </div>
+          <div class="full-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Customer</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0415</td><td class="name">Sipho Mthembu</td><td>Toyota Fortuner</td><td>10 May 2026</td><td>14 May 2026</td><td style="color:#4ade80;font-weight:600">R4 200</td><td><span class="badge confirmed">Confirmed</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0414</td><td class="name">Lerato Khumalo</td><td>BMW 3 Series</td><td>09 May 2026</td><td>12 May 2026</td><td style="color:#fbbf24;font-weight:600">R6 800</td><td><span class="badge pending">Pending</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0413</td><td class="name">Tebogo Nkosi</td><td>VW Polo</td><td>05 May 2026</td><td>09 May 2026</td><td style="color:var(--text2);font-weight:600">R2 100</td><td><span class="badge returned">Returned</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0412</td><td class="name">Amahle Dlamini</td><td>Mercedes C-Class</td><td>01 May 2026</td><td>05 May 2026</td><td style="color:#f87171;font-weight:600">R9 500</td><td><span class="badge cancelled">Cancelled</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0411</td><td class="name">Kgosi Phiri</td><td>Hyundai Tucson</td><td>08 May 2026</td><td>13 May 2026</td><td style="color:#4ade80;font-weight:600">R3 600</td><td><span class="badge confirmed">Confirmed</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0410</td><td class="name">Zanele Mokoena</td><td>Audi A4</td><td>07 May 2026</td><td>10 May 2026</td><td style="color:#4ade80;font-weight:600">R5 400</td><td><span class="badge confirmed">Confirmed</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0409</td><td class="name">Bongani Cele</td><td>VW Polo</td><td>03 May 2026</td><td>07 May 2026</td><td style="color:var(--text2);font-weight:600">R2 100</td><td><span class="badge returned">Returned</span></td></tr>
+                  <tr><td style="color:var(--text3);font-family:var(--mono)">#0408</td><td class="name">Naledi Sithole</td><td>Toyota Fortuner</td><td>28 Apr 2026</td><td>02 May 2026</td><td style="color:#fbbf24;font-weight:600">R4 200</td><td><span class="badge pending">Pending</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- FLEET PAGE -->
+        <div class="page" id="page-fleet">
+          <div class="page-header">
+            <div><div class="page-heading">Fleet Management</div><div class="page-count">24 vehicles total</div></div>
+            <button class="btn-primary"><i class="ti ti-plus"></i> Add Vehicle</button>
+          </div>
+          <div class="full-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Vehicle</th><th>Plate</th><th>Category</th><th>Daily Rate</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td class="name">Toyota Fortuner 2023</td><td style="font-family:var(--mono);color:var(--text3)">CA 123-456</td><td>SUV</td><td style="color:#4ade80">R1 050/day</td><td><span class="fleet-status rented">Rented</span></td></tr>
+                  <tr><td class="name">BMW 3 Series 2022</td><td style="font-family:var(--mono);color:var(--text3)">GP 789-012</td><td>Luxury</td><td style="color:#4ade80">R2 266/day</td><td><span class="fleet-status available">Available</span></td></tr>
+                  <tr><td class="name">VW Polo 2024</td><td style="font-family:var(--mono);color:var(--text3)">WC 345-678</td><td>Economy</td><td style="color:#4ade80">R525/day</td><td><span class="fleet-status available">Available</span></td></tr>
+                  <tr><td class="name">Mercedes C-Class 2023</td><td style="font-family:var(--mono);color:var(--text3)">GP 901-234</td><td>Luxury</td><td style="color:#fbbf24">R3 166/day</td><td><span class="fleet-status maintenance">Service</span></td></tr>
+                  <tr><td class="name">Hyundai Tucson 2024</td><td style="font-family:var(--mono);color:var(--text3)">KZN 567-890</td><td>SUV</td><td style="color:#4ade80">R720/day</td><td><span class="fleet-status rented">Rented</span></td></tr>
+                  <tr><td class="name">Audi A4 2023</td><td style="font-family:var(--mono);color:var(--text3)">GP 234-567</td><td>Luxury</td><td style="color:#4ade80">R1 800/day</td><td><span class="fleet-status available">Available</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- CUSTOMERS PAGE -->
+        <div class="page" id="page-customers">
+          <div class="page-header">
+            <div><div class="page-heading">Customers</div><div class="page-count">148 registered customers</div></div>
+          </div>
+          <div class="full-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Bookings</th><th>Total Spent</th><th>Loyalty Pts</th></tr></thead>
+                <tbody>
+                  <tr><td class="name">Sipho Mthembu</td><td style="color:var(--text3)">sipho@email.co.za</td><td>6</td><td style="color:#4ade80;font-weight:600">R24 800</td><td style="color:var(--purple)">2 480</td></tr>
+                  <tr><td class="name">Lerato Khumalo</td><td style="color:var(--text3)">lerato@email.co.za</td><td>4</td><td style="color:#4ade80;font-weight:600">R19 200</td><td style="color:var(--purple)">1 920</td></tr>
+                  <tr><td class="name">Tebogo Nkosi</td><td style="color:var(--text3)">tebogo@email.co.za</td><td>3</td><td style="color:#4ade80;font-weight:600">R8 400</td><td style="color:var(--purple)">840</td></tr>
+                  <tr><td class="name">Amahle Dlamini</td><td style="color:var(--text3)">amahle@email.co.za</td><td>2</td><td style="color:#4ade80;font-weight:600">R12 700</td><td style="color:var(--purple)">1 270</td></tr>
+                  <tr><td class="name">Kgosi Phiri</td><td style="color:var(--text3)">kgosi@email.co.za</td><td>5</td><td style="color:#4ade80;font-weight:600">R16 500</td><td style="color:var(--purple)">1 650</td></tr>
+                  <tr><td class="name">Zanele Mokoena</td><td style="color:var(--text3)">zanele@email.co.za</td><td>7</td><td style="color:#4ade80;font-weight:600">R31 200</td><td style="color:var(--purple)">3 120</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORTS PAGE -->
+        <div class="page" id="page-reports">
+          <div class="reports-grid">
+            <div class="report-card"><div class="report-label">Total Revenue (All Time)</div><div class="report-value">R642k</div><div class="report-sub">Across 42 completed bookings</div></div>
+            <div class="report-card"><div class="report-label">Average Booking Value</div><div class="report-value">R4 850</div><div class="report-sub">Per confirmed booking</div></div>
+            <div class="report-card"><div class="report-label">Most Popular Vehicle</div><div class="report-value" style="font-size:1rem;padding-top:.4rem">Toyota Fortuner</div><div class="report-sub">12 bookings this quarter</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Monthly revenue breakdown</div></div>
+            <div class="chart-area">
+              <div class="bar-chart" id="reportsChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PENALTIES PAGE -->
+        <div class="page" id="page-penalties">
+          <div class="page-header">
+            <div><div class="page-heading">Penalties</div><div class="page-count">5 outstanding charges</div></div>
+          </div>
+          <div class="full-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Customer</th><th>Booking</th><th>Reason</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td class="name">Lerato Khumalo</td><td style="font-family:var(--mono);color:var(--text3)">#0414</td><td>Late return (2 days)</td><td style="color:#f87171;font-weight:600">R700</td><td><span class="badge pending">Unpaid</span></td></tr>
+                  <tr><td class="name">Amahle Dlamini</td><td style="font-family:var(--mono);color:var(--text3)">#0412</td><td>Fuel not refilled</td><td style="color:#f87171;font-weight:600">R350</td><td><span class="badge pending">Unpaid</span></td></tr>
+                  <tr><td class="name">Bongani Cele</td><td style="font-family:var(--mono);color:var(--text3)">#0409</td><td>Minor scratch — right door</td><td style="color:#f87171;font-weight:600">R1 200</td><td><span class="badge pending">Unpaid</span></td></tr>
+                  <tr><td class="name">Naledi Sithole</td><td style="font-family:var(--mono);color:var(--text3)">#0408</td><td>Late return (1 day)</td><td style="color:#f87171;font-weight:600">R350</td><td><span class="badge pending">Unpaid</span></td></tr>
+                  <tr><td class="name">Tebogo Nkosi</td><td style="font-family:var(--mono);color:var(--text3)">#0413</td><td>Interior cleaning fee</td><td style="color:var(--text2);font-weight:600">R200</td><td><span class="badge confirmed">Paid</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div class="page" id="page-settings">
+          <div class="settings-section">
+            <div class="settings-section-head">General</div>
+            <div class="settings-row"><div><div class="settings-label">Company name</div><div class="settings-desc">DriveFlow Rentals (Pty) Ltd</div></div></div>
+            <div class="settings-row"><div><div class="settings-label">Base currency</div><div class="settings-desc">South African Rand (ZAR)</div></div></div>
+            <div class="settings-row"><div><div class="settings-label">Time zone</div><div class="settings-desc">Africa/Johannesburg (UTC+2)</div></div></div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-section-head">Notifications</div>
+            <div class="settings-row"><div><div class="settings-label">New booking alerts</div><div class="settings-desc">Get notified when a new booking is placed</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="settings-row"><div><div class="settings-label">Payment reminders</div><div class="settings-desc">Auto-send reminders for pending payments</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="settings-row"><div><div class="settings-label">Penalty alerts</div><div class="settings-desc">Alert when a penalty is issued</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+        </div>
+
+        <!-- NOTIFICATIONS PAGE -->
+        <div class="page" id="page-notifications">
+          <div class="page-header"><div><div class="page-heading">Notifications</div><div class="page-count">2 unread</div></div></div>
+          <div class="full-panel">
+            <div class="activity-list">
+              <div class="activity-item"><div class="act-dot green"></div><div><div class="act-text" style="color:var(--text);font-weight:500">New booking — Toyota Fortuner by Sipho Mthembu</div><div class="act-time">2 minutes ago · Unread</div></div></div>
+              <div class="activity-item"><div class="act-dot amber"></div><div><div class="act-text" style="color:var(--text);font-weight:500">Payment pending — BMW 3 Series booking #BK0412</div><div class="act-time">14 minutes ago · Unread</div></div></div>
+              <div class="activity-item"><div class="act-dot blue"></div><div><div class="act-text">Vehicle returned — VW Polo #BK0409</div><div class="act-time">1 hour ago</div></div></div>
+              <div class="activity-item"><div class="act-dot red"></div><div><div class="act-text">Penalty issued — late return, R350 — Naledi Sithole</div><div class="act-time">3 hours ago</div></div></div>
+              <div class="activity-item"><div class="act-dot green"></div><div><div class="act-text">New customer registered — Lerato Khumalo</div><div class="act-time">5 hours ago</div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end content -->
+    </div><!-- end main -->
+  </div><!-- end layout -->
+</div><!-- end appShell -->
+
+<script>
+const DEMO_EMAIL = 'admin@driveflow.co.za';
+const DEMO_PASS  = 'admin123';
+
+function doLogin(){
+  const e = document.getElementById('loginEmail').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  if(e===DEMO_EMAIL && p===DEMO_PASS){
+    err.style.display='none';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('appShell').style.display='block';
+    buildChart('barChart');
+    buildChart('reportsChart');
+  } else {
+    err.style.display='block';
+  }
+}
+
+function doLogout(){
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPass').value='';
+}
+
+document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin()});
+document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin()});
+
+const pageTitles = {
+  overview:'Dashboard Overview',bookings:'All Bookings',fleet:'Fleet Management',
+  customers:'Customers',reports:'Revenue & Reports',penalties:'Penalties',
+  settings:'Settings',notifications:'Notifications'
+};
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = pageTitles[id]||id;
+  document.getElementById('topbarSub').textContent = 'DriveFlow Rentals — Administrative View';
+}
+
+function buildChart(containerId){
+  const months=['Nov','Dec','Jan','Feb','Mar','Apr','May'];
+  const values=[38000,52000,41000,67000,73000,58000,84000];
+  const max=Math.max(...values);
+  const c=document.getElementById(containerId);
+  if(!c||c.children.length>0)return;
+  months.forEach((m,i)=>{
+    const h=Math.round((values[i]/max)*110);
+    const w=document.createElement('div');w.className='bar-wrap';
+    const v=document.createElement('div');v.className='bar-val';v.textContent='R'+Math.round(values[i]/1000)+'k';
+    const b=document.createElement('div');b.className='bar'+(i===6?' hi':'');b.style.height=h+'px';
+    const l=document.createElement('div');l.className='bar-label';l.textContent=m;
+    w.appendChild(v);w.appendChild(b);w.appendChild(l);c.appendChild(w);
+  });
+}
+</script>
+</body>
+</html>
