@@ -9,7 +9,7 @@ import os, string, random, csv, io
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "driveflow-secret-2026")
 
-#  Decorators route
+# ── Decorators ──────────────────────────────────────────────────────────────
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -40,14 +40,20 @@ def staff_required(f):
 def gen_ref(prefix="DRV"):
     return prefix + "-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-# Public route
+# ── Public ───────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
     db = get_db()
+    _vs = db.execute("""
+        SELECT COUNT(*) as total,
+               SUM(status='Available') as available,
+               COUNT(DISTINCT category) as categories
+        FROM vehicles
+    """).fetchone()
     stats = {
-        "total_vehicles": db.execute("SELECT COUNT(*) FROM vehicles").fetchone()[0],
-        "available":      db.execute("SELECT COUNT(*) FROM vehicles WHERE status='Available'").fetchone()[0],
-        "categories":     db.execute("SELECT COUNT(DISTINCT category) FROM vehicles").fetchone()[0],
+        "total_vehicles": _vs["total"],
+        "available":      _vs["available"],
+        "categories":     _vs["categories"],
     }
     featured = db.execute("SELECT * FROM vehicles WHERE status='Available' ORDER BY daily_rate DESC LIMIT 3").fetchall()
     db.close()
@@ -80,7 +86,7 @@ def vehicle_detail(vehicle_id):
     db.close()
     return render_template("vehicle_detail.html", vehicle=vehicle, reviews=reviews, avg_rating=avg)
 
-# Auth route
+# ── Auth ─────────────────────────────────────────────────────────────────────
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -131,7 +137,7 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for("index"))
 
-#  Customer Dashboard route
+# ── Customer Dashboard ───────────────────────────────────────────────────────
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -157,7 +163,7 @@ def dashboard():
     return render_template("dashboard.html", bookings=bookings,
         all_penalties=all_penalties, points_history=points_history, user=user)
 
-#  Profile 
+# ── Profile ──────────────────────────────────────────────────────────────────
 @app.route("/profile", methods=["GET","POST"])
 @login_required
 def profile():
@@ -190,7 +196,7 @@ def profile():
     db.close()
     return render_template("profile.html", user=user)
 
-#  Promo code validator 
+# ── Promo code validator ─────────────────────────────────────────────────────
 @app.route("/api/promo/<code>")
 @login_required
 def validate_promo(code):
@@ -206,7 +212,7 @@ def validate_promo(code):
                         "description":promo["description"],"min_amount":promo["min_booking_amount"]})
     return jsonify({"valid":False})
 
-#  Book 
+# ── Book ─────────────────────────────────────────────────────────────────────
 @app.route("/book/<int:vehicle_id>", methods=["GET","POST"])
 @login_required
 def book(vehicle_id):
@@ -289,7 +295,7 @@ def book(vehicle_id):
     db.close()
     return render_template("book.html", vehicle=vehicle, user=user)
 
-#  Cancel booking 
+# ── Cancel booking ───────────────────────────────────────────────────────────
 @app.route("/cancel/<int:booking_id>", methods=["POST"])
 @login_required
 def cancel_booking(booking_id):
@@ -312,7 +318,7 @@ def cancel_booking(booking_id):
     db.close()
     return redirect(url_for("dashboard"))
 
-# Extend booking 
+# ── Extend booking ───────────────────────────────────────────────────────────
 @app.route("/extend/<int:booking_id>", methods=["GET","POST"])
 @login_required
 def extend_booking(booking_id):
@@ -353,7 +359,7 @@ def extend_booking(booking_id):
     db.close()
     return render_template("extend_booking.html", booking=b)
 
-#  Waitlist 
+# ── Waitlist ─────────────────────────────────────────────────────────────────
 @app.route("/waitlist/<int:vehicle_id>", methods=["POST"])
 @login_required
 def join_waitlist(vehicle_id):
@@ -365,7 +371,7 @@ def join_waitlist(vehicle_id):
     flash("You've been added to the waitlist. We'll notify you when this vehicle becomes available.", "success")
     return redirect(url_for("dashboard"))
 
-# Payment 
+# ── Payment ──────────────────────────────────────────────────────────────────
 @app.route("/pay/<int:booking_id>", methods=["GET","POST"])
 @login_required
 def payment(booking_id):
@@ -404,7 +410,7 @@ def payment(booking_id):
     db.close()
     return render_template("payment.html", booking=b)
 
-# Receipt 
+# ── Receipt ──────────────────────────────────────────────────────────────────
 @app.route("/receipt/<int:booking_id>")
 @login_required
 def receipt(booking_id):
@@ -421,7 +427,7 @@ def receipt(booking_id):
         flash("Receipt not found.", "error"); return redirect(url_for("dashboard"))
     return render_template("receipt.html", booking=b, payment=payment)
 
-# Reviews 
+# ── Reviews ──────────────────────────────────────────────────────────────────
 @app.route("/review/<int:booking_id>", methods=["GET","POST"])
 @login_required
 def submit_review(booking_id):
@@ -452,7 +458,7 @@ def submit_review(booking_id):
     db.close()
     return render_template("submit_review.html", booking=b)
 
-#  Penalties (customer) 
+# ── Penalties (customer) ─────────────────────────────────────────────────────
 @app.route("/penalties")
 @login_required
 def my_penalties():
@@ -479,7 +485,7 @@ def pay_penalty(penalty_id):
     penalty = db.execute("""
         SELECT p.*, v.make, v.model, v.year, v.license_plate, v.category,
                b.pickup_date, b.return_date, b.id as booking_ref,
-               u.name as customer_name, u.email as customer_email
+               u.name as customer_name, u.email as customer_email, u.license_number
         FROM penalties p JOIN bookings b ON p.booking_id=b.id
         JOIN vehicles v ON b.vehicle_id=v.id JOIN users u ON b.user_id=u.id
         WHERE p.id=? AND b.user_id=?
@@ -494,13 +500,6 @@ def pay_penalty(penalty_id):
         db.execute("UPDATE penalties SET status='Paid', paid_at=datetime('now'), notes=? WHERE id=?",
             (f"Paid via {method}. Ref: {reference}", penalty_id))
         db.commit()
-        penalty = db.execute("""
-            SELECT p.*, v.make, v.model, v.year, v.license_plate, v.category,
-                   b.pickup_date, b.return_date, b.id as booking_ref,
-                   u.name as customer_name, u.email as customer_email, u.license_number
-            FROM penalties p JOIN bookings b ON p.booking_id=b.id
-            JOIN vehicles v ON b.vehicle_id=v.id JOIN users u ON b.user_id=u.id WHERE p.id=?
-        """, (penalty_id,)).fetchone()
         db.close()
         audit(session["user_id"],"PAY_PENALTY","penalties",penalty_id,f"R{penalty['amount']} via {method}")
         flash(f"Payment of R{penalty['amount']:,.2f} successful!", "success")
@@ -509,7 +508,7 @@ def pay_penalty(penalty_id):
     db.close()
     return render_template("pay_penalty.html", penalty=penalty)
 
-#  Export bookings CSV 
+# ── Export bookings CSV ──────────────────────────────────────────────────────
 @app.route("/export/bookings")
 @login_required
 def export_my_bookings():
@@ -578,11 +577,11 @@ def staff_add_maintenance():
             INSERT INTO maintenance_logs (vehicle_id,type,description,cost,mileage_at_service,
                 service_date,next_service_date,next_service_mileage,performed_by,logged_by)
             VALUES (?,?,?,?,?,?,?,?,?,?)
-        """, (vehicle_id, mtype, desc, cost, mileage, sdate, next_d, next_m, perf_by, session["user_id"]))
+        """, (vid, mtype, desc, cost, mileage, sdate, next_d, next_m, perf_by, session["user_id"]))
         db.execute("UPDATE vehicles SET mileage=?, last_service_mileage=?, next_service_date=? WHERE id=?",
-            (mileage, mileage, next_d, vehicle_id))
+            (mileage, mileage, next_d, vid))
         if mtype == "Major Service" or mtype == "Repair":
-            db.execute("UPDATE vehicles SET status='Maintenance' WHERE id=?", (vehicle_id,))
+            db.execute("UPDATE vehicles SET status='Maintenance' WHERE id=?", (vid,))
         db.commit(); db.close()
         audit(session["user_id"],"ADD_MAINTENANCE","maintenance_logs",vid,f"{mtype} on vehicle {vid}")
         flash("Maintenance log added.", "success")
@@ -596,17 +595,32 @@ def staff_add_maintenance():
 @admin_required
 def admin_dashboard():
     db = get_db()
+    _vs = db.execute("""
+        SELECT
+            COUNT(*) as total,
+            SUM(status='Available') as available,
+            SUM(status='Rented') as rented,
+            SUM(status='Maintenance') as maintenance
+        FROM vehicles
+    """).fetchone()
+    _bs = db.execute("""
+        SELECT
+            COUNT(*) as total,
+            SUM(status='Confirmed') as active,
+            COALESCE(SUM(CASE WHEN status='Confirmed' THEN total_amount ELSE 0 END),0) as revenue
+        FROM bookings
+    """).fetchone()
     stats = {
-        "total_vehicles":  db.execute("SELECT COUNT(*) FROM vehicles").fetchone()[0],
-        "available":       db.execute("SELECT COUNT(*) FROM vehicles WHERE status='Available'").fetchone()[0],
-        "rented":          db.execute("SELECT COUNT(*) FROM vehicles WHERE status='Rented'").fetchone()[0],
-        "maintenance":     db.execute("SELECT COUNT(*) FROM vehicles WHERE status='Maintenance'").fetchone()[0],
-        "total_users":     db.execute("SELECT COUNT(*) FROM users WHERE role='customer'").fetchone()[0],
-        "total_bookings":  db.execute("SELECT COUNT(*) FROM bookings").fetchone()[0],
-        "total_revenue":   db.execute("SELECT COALESCE(SUM(total_amount),0) FROM bookings WHERE status='Confirmed'").fetchone()[0],
-        "active_bookings": db.execute("SELECT COUNT(*) FROM bookings WHERE status='Confirmed'").fetchone()[0],
+        "total_vehicles":        _vs["total"],
+        "available":             _vs["available"],
+        "rented":                _vs["rented"],
+        "maintenance":           _vs["maintenance"],
+        "total_users":           db.execute("SELECT COUNT(*) FROM users WHERE role='customer'").fetchone()[0],
+        "total_bookings":        _bs["total"],
+        "total_revenue":         _bs["revenue"],
+        "active_bookings":       _bs["active"],
         "outstanding_penalties": db.execute("SELECT COALESCE(SUM(amount),0) FROM penalties WHERE status='Unpaid'").fetchone()[0],
-        "total_reviews":   db.execute("SELECT COUNT(*) FROM reviews").fetchone()[0],
+        "total_reviews":         db.execute("SELECT COUNT(*) FROM reviews").fetchone()[0],
     }
     recent_bookings = db.execute("""
         SELECT b.*, u.name as customer_name, v.make, v.model
@@ -623,7 +637,7 @@ def admin_dashboard():
     return render_template("admin/dashboard.html", stats=stats,
         recent_bookings=recent_bookings, monthly_chart=list(reversed(monthly_chart)))
 
-# Admin Fleet 
+# ── Admin Fleet ──────────────────────────────────────────────────────────────
 @app.route("/admin/fleet")
 @login_required
 @admin_required
@@ -698,7 +712,7 @@ def update_vehicle_status(vehicle_id):
     flash(f"Status updated to {ns}.", "success")
     return redirect(url_for("admin_fleet"))
 
-# Admin Bookings 
+# ── Admin Bookings ───────────────────────────────────────────────────────────
 @app.route("/admin/bookings")
 @login_required
 @admin_required
@@ -775,7 +789,7 @@ def admin_process_return(booking_id):
     db.execute("UPDATE vehicles SET status='Available' WHERE id=?", (b["vid"],))
     # Award loyalty points for clean return
     if days_late == 0 and condition == "Good":
-        uid = db.execute("SELECT user_id FROM bookings WHERE id=?", (booking_id,)).fetchone()[0]
+        uid = b["user_id"]
         db.execute("UPDATE users SET loyalty_points=loyalty_points+50 WHERE id=?", (uid,))
         db.execute("INSERT INTO loyalty_transactions (user_id,points,type,description,booking_id) VALUES (?,?,?,?,?)",
             (uid, 50, "bonus", "On-time clean return bonus", booking_id))
@@ -844,7 +858,7 @@ def admin_all_penalties():
     db.close()
     return render_template("admin/penalties.html", penalties=penalties, status_filter=sf, total_outstanding=outstanding)
 
-#Admin Customers 
+# ── Admin Customers ──────────────────────────────────────────────────────────
 @app.route("/admin/customers")
 @login_required
 @admin_required
@@ -918,10 +932,10 @@ def admin_delete_customer(user_id):
             (f"deleted-{anon}@driveflow.invalid", user_id))
         flash(f"Customer '{customer['name']}' anonymised.", "success")
     db.commit(); db.close()
-    audit(session["user_id"],"DELETE_CUSTOMER","users",uid,action)
+    audit(session["user_id"],"DELETE_CUSTOMER","users",user_id,action)
     return redirect(url_for("admin_customers"))
 
-#Admin Promo Codes 
+# ── Admin Promo Codes ────────────────────────────────────────────────────────
 @app.route("/admin/promos")
 @login_required
 @admin_required
@@ -963,7 +977,7 @@ def admin_toggle_promo(pid):
     db.close()
     return redirect(url_for("admin_promos"))
 
-#Admin Reports 
+# ── Admin Reports ────────────────────────────────────────────────────────────
 @app.route("/admin/reports")
 @login_required
 @admin_required
@@ -999,7 +1013,7 @@ def admin_reports():
         top_vehicles=top_vehicles, top_customers=top_customers,
         utilisation=utilisation, outstanding_debt=outstanding_debt)
 
-#Admin CSV Exports 
+# ── Admin CSV Exports ────────────────────────────────────────────────────────
 @app.route("/admin/export/<report_type>")
 @login_required
 @admin_required
@@ -1044,7 +1058,7 @@ def admin_export_csv(report_type):
     resp.headers["Content-Type"] = "text/csv"
     return resp
 
-#Admin Maintenance 
+# ── Admin Maintenance ────────────────────────────────────────────────────────
 @app.route("/admin/maintenance")
 @login_required
 @admin_required
@@ -1081,7 +1095,7 @@ def admin_add_maintenance():
     flash("Maintenance log added.", "success")
     return redirect(url_for("admin_maintenance"))
 
-#Admin Audit Log 
+# ── Admin Audit Log ──────────────────────────────────────────────────────────
 @app.route("/admin/audit")
 @login_required
 @admin_required
@@ -1103,7 +1117,7 @@ def admin_audit():
     return render_template("admin/audit.html", logs=logs, page=page,
         per_pg=per_pg, total=total, entity_filter=entity_filter, entities=entities)
 
-#Admin Invoice PDF
+# ── Admin Invoice PDF ────────────────────────────────────────────────────────
 @app.route("/admin/invoice/<int:booking_id>")
 @login_required
 @admin_required
