@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="dashboard-grid">
+    <article class="card">
+      <h3>Total Vehicles</h3>
+      <p>{{ total_vehicles }}</p>
+    </article>
+    <article class="card">
+      <h3>Active Bookings</h3>
+      <p>{{ active_bookings }}</p>
+    </article>
+    <article class="card">
+      <h3>Available Cars</h3>
+      <p>{{ available_vehicles }}</p>
+    </article>
+  </section>
+
+  <section class="panel">
+    <h2>Latest Vehicles</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Brand</th><th>Price/Day</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for vehicle in latest_vehicles %}
+            <tr>
+              <td>{{ vehicle.name }}</td>
+              <td>{{ vehicle.brand }}</td>
+              <td>R{{ "%.2f"|format(vehicle.price_per_day) }}</td>
+              <td>{{ vehicle.status }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
