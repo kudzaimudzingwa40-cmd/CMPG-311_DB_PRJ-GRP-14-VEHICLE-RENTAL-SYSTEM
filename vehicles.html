@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <h2>Vehicle Fleet</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Brand</th><th>Price/Day</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for vehicle in vehicles %}
+            <tr>
+              <td>{{ vehicle.name }}</td>
+              <td>{{ vehicle.brand }}</td>
+              <td>R{{ "%.2f"|format(vehicle.price_per_day) }}</td>
+              <td>{{ vehicle.status }}</td>
+              <td>
+                {% if vehicle.status == 'available' and session.user_id %}
+                  <form action="/book/{{ vehicle.id }}" method="POST" class="inline-form">
+                    <input type="number" name="days" value="1" min="1" class="tiny-input" placeholder="Days">
+                    <input type="text" name="id_number" required placeholder="ID Number">
+                    <input type="text" name="license_number" required placeholder="License Number">
+                    <button type="submit">Book</button>
+                  </form>
+                {% else %}
+                  <span class="muted">Not bookable</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if session.role == 'admin' %}
+  <section class="form-card">
+    <h2>Add New Vehicle</h2>
+    <form method="POST" action="/vehicles">
+      <label>Name</label>
+      <input type="text" name="name" required>
+      <label>Brand</label>
+      <input type="text" name="brand" required>
+      <label>Price per day</label>
+      <input type="number" step="0.01" name="price" required>
+      <button type="submit">Add Vehicle</button>
+    </form>
+  </section>
+  {% endif %}
+{% endblock %}
