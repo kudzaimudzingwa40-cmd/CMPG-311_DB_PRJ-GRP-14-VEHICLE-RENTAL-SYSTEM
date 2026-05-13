@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="form-card">
+    <h2>Login</h2>
+    <form method="POST" action="/login">
+      <label>Email</label>
+      <input type="email" name="email" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p>New to DriveFlows? <a href="/register">Register now</a>.</p>
+  </section>
+{% endblock %}
