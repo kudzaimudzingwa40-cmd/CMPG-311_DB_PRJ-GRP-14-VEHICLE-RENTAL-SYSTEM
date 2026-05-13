@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="panel">
+    <h2>Your Bookings</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Vehicle</th><th>Days</th><th>Total</th><th>ID Number</th><th>License</th><th>Status</th><th>Created</th></tr>
+        </thead>
+        <tbody>
+          {% for booking in bookings %}
+            <tr>
+              <td>{{ booking.vehicle_name }}</td>
+              <td>{{ booking.days }}</td>
+              <td>R{{ "%.2f"|format(booking.total_cost) }}</td>
+              <td>{{ booking.id_number }}</td>
+              <td>{{ booking.license_number }}</td>
+              <td>{{ booking.status }}</td>
+              <td>{{ booking.created_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
