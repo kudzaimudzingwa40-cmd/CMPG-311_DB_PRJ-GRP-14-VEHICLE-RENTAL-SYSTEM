@@ -1,0 +1,31 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background: #f4f7fb; color: #222; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; background: #0b3d91; color: #fff; }
+header .brand { display: inline-flex; align-items: center; gap: 12px; font-size: 1.35rem; font-weight: 700; color: #fff; text-decoration: none; }
+header .logo-image { width: 40px; height: 40px; display: block; }
+header nav a { color: #fff; margin-left: 18px; text-decoration: none; font-size: 0.98rem; }
+main { padding: 30px 40px; max-width: 1200px; margin: 0 auto; }
+.hero { text-align: center; padding: 60px 20px; background: #fff; border-radius: 18px; box-shadow: 0 18px 40px rgba(20, 35, 77, 0.08); }
+.hero h1 { margin-bottom: 12px; font-size: 2.7rem; }
+.hero p { color: #52607a; margin-bottom: 24px; font-size: 1.05rem; }
+.hero-actions .button { display: inline-block; padding: 14px 28px; border-radius: 10px; background: #0b3d91; color: #fff; text-decoration: none; margin: 0 8px; }
+.hero-actions .button-secondary { background: #eef3ff; color: #0b3d91; }
+.form-card, .panel { background: #fff; border-radius: 18px; box-shadow: 0 18px 30px rgba(20, 35, 77, 0.06); padding: 26px; margin-bottom: 24px; }
+.form-card h2, .panel h2 { margin-top: 0; }
+.form-card form label { display: block; margin: 14px 0 6px; font-weight: 600; }
+.form-card form input, .form-card form button, .inline-form input, .inline-form button { width: 100%; padding: 12px 14px; border: 1px solid #d9e2f0; border-radius: 10px; }
+.form-card form button { margin-top: 18px; background: #0b3d91; color: #fff; border: none; cursor: pointer; }
+.inline-form { display: flex; gap: 10px; align-items: center; }
+.inline-form input { width: 72px; }
+.inline-form button { width: auto; padding: 8px 14px; background: #22d3ee; color: #0b2141; border: none; border-radius: 10px; cursor: pointer; }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+thead th { text-align: left; padding: 12px 14px; background: #eef3ff; color: #0b3d91; }
+tbody td { padding: 14px; border-top: 1px solid #eef3ff; }
+.card { padding: 24px; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px rgba(20, 35, 77, 0.05); }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 24px; }
+.messages { margin-bottom: 18px; }
+.message { padding: 14px 18px; border-radius: 12px; background: #ffefc9; color: #7d5b00; }
+footer { text-align: center; padding: 18px 40px; color: #65748b; }
+.muted { color: #7a8199; font-size: 0.95rem; }
+@media (max-width: 760px) { header { flex-wrap: wrap; gap: 12px; } .hero h1 { font-size: 2.2rem; } }
