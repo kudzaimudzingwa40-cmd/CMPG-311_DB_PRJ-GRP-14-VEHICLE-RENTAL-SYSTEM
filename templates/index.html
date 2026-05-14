@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}DriveFlow Rental | Compare and book rental cars{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <p class="eyebrow">Vehicle rental marketplace</p>
+        <h1>Compare cars, pick your dates, and drive away with confidence.</h1>
+        <p class="hero-subtitle">Your journey. Our wheels. One smooth flow.</p>
+    </div>
+    <form class="search-panel" action="{{ url_for('vehicles') }}" method="get">
+        <label>
+            <span>Pick-up location</span>
+            <input type="text" name="search" placeholder="Johannesburg, Toyota, SUV..." value="">
+        </label>
+        <label>
+            <span>Pick-up date</span>
+            <input type="date" name="pickup_date" required>
+        </label>
+        <label>
+            <span>Return date</span>
+            <input type="date" name="return_date" required>
+        </label>
+        <label>
+            <span>Car type</span>
+            <select name="category">
+                <option value="">Any type</option>
+                <option>Economy</option>
+                <option>SUV</option>
+                <option>Luxury</option>
+            </select>
+        </label>
+        <button type="submit">Search cars</button>
+    </form>
+</section>
+
+<section class="stats-strip" aria-label="Fleet summary">
+    <div><strong>{{ stats.total_vehicles or 0 }}</strong><span>Fleet vehicles</span></div>
+    <div><strong>{{ stats.available or 0 }}</strong><span>Available now</span></div>
+    <div><strong>{{ stats.categories or 0 }}</strong><span>Categories</span></div>
+    <div><strong>100</strong><span>Welcome points</span></div>
+</section>
+
+<section class="section-block">
+    <div class="section-heading">
+        <p class="eyebrow">Popular choices</p>
+        <h2>Top-rated daily deals</h2>
+        <a href="{{ url_for('vehicles') }}">View all cars</a>
+    </div>
+    <div class="vehicle-grid">
+        {% for vehicle in featured %}
+            {% include "_vehicle_card.html" %}
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

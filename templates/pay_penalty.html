@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Pay penalty | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">Penalty payment</p>
+    <h1>R{{ "%.2f"|format(penalty.amount) }}</h1>
+    <p class="muted">{{ penalty.type }} for booking #{{ penalty.booking_ref }}</p>
+    <form method="post">
+        <label><span>Method</span><select name="method"><option>Card</option><option>EFT</option><option>Cash</option></select></label>
+        <label><span>Card number</span><input name="card_number" placeholder="4242 4242 4242 4242"></label>
+        <button class="button" type="submit">Pay penalty</button>
+    </form>
+</section>
+{% endblock %}

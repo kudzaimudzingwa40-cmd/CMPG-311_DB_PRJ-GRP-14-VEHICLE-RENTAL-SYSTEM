@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Extend booking | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">Extend trip</p>
+    <h1>{{ booking.make }} {{ booking.model }}</h1>
+    <p class="muted">Current return date: {{ booking.return_date }}</p>
+    <form method="post">
+        <label><span>New return date</span><input type="date" name="new_return_date" required></label>
+        <button class="button" type="submit">Extend booking</button>
+    </form>
+</section>
+{% endblock %}

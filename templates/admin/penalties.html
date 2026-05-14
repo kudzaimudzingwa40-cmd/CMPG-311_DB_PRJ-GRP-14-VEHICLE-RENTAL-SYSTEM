@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Admin penalties | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Admin</p><h1>Penalties</h1></div><strong>Outstanding R{{ "%.2f"|format(total_outstanding or 0) }}</strong></section>
+<section class="table-panel"><table><thead><tr><th>Customer</th><th>Vehicle</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead><tbody>{% for p in penalties %}<tr><td>{{ p.customer_name }}</td><td>{{ p.make }} {{ p.model }}</td><td>{{ p.type }}</td><td>R{{ "%.2f"|format(p.amount) }}</td><td>{{ p.status }}</td></tr>{% else %}<tr><td colspan="5">No penalties.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

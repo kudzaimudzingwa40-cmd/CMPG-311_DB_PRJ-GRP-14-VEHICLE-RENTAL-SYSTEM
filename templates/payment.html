@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Payment | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="checkout-layout">
+    <form class="booking-form" method="post">
+        <p class="eyebrow">Secure checkout</p>
+        <h1>Confirm payment</h1>
+        <label><span>Payment method</span><select name="method"><option>Card</option><option>EFT</option><option>Cash</option></select></label>
+        <label><span>Card number</span><input name="card_number" inputmode="numeric" placeholder="4242 4242 4242 4242"></label>
+        <div class="form-grid">
+            <label><span>Expiry</span><input placeholder="MM/YY"></label>
+            <label><span>CVV</span><input placeholder="123"></label>
+        </div>
+        <button class="button" type="submit">Pay R{{ "%.2f"|format(booking.total_amount) }}</button>
+    </form>
+    <aside class="summary-card">
+        <h2>Booking summary</h2>
+        <p><strong>{{ booking.year }} {{ booking.make }} {{ booking.model }}</strong></p>
+        <p class="muted">{{ booking.pickup_date }} to {{ booking.return_date }}</p>
+        <div class="summary-total"><span>Total due</span><strong>R{{ "%.2f"|format(booking.total_amount) }}</strong></div>
+        {% if booking.discount_amount %}<p class="success-text">Discount applied: R{{ "%.2f"|format(booking.discount_amount) }}</p>{% endif %}
+    </aside>
+</section>
+{% endblock %}

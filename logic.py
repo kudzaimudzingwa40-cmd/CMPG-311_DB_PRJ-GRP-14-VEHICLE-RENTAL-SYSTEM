@@ -1143,7 +1143,7 @@ def generate_invoice(booking_id):
     head_style   = ParagraphStyle("head",  parent=styles["Normal"],   textColor=gold, fontSize=11, spaceAfter=2)
     normal_style = ParagraphStyle("norm",  parent=styles["Normal"],   fontSize=10)
     story = []
-    story.append(Paragraph("DriveFlow Rentals", title_style))
+    story.append(Paragraph("DriveFlow Rental", title_style))
     story.append(Paragraph("Premium Vehicle Rental Services", normal_style))
     story.append(Spacer(1, 0.4*cm))
     story.append(Paragraph(f"<b>TAX INVOICE</b>   #INV-{booking_id:05d}", head_style))
@@ -1191,7 +1191,7 @@ def generate_invoice(booking_id):
                              ("GRID",(0,0),(-1,-1),0.3,colors.HexColor("#333333")),
                              ("ALIGN",(1,0),(-1,-1),"RIGHT")]))
     story += [it, Spacer(1,0.5*cm)]
-    story.append(Paragraph("Thank you for choosing DriveFlow Rentals. Please retain this invoice for your records.", normal_style))
+    story.append(Paragraph("Thank you for choosing DriveFlow Rental. Please retain this invoice for your records.", normal_style))
     doc.build(story)
     buf.seek(0)
     resp = make_response(buf.read())
@@ -1199,6 +1199,7 @@ def generate_invoice(booking_id):
     resp.headers["Content-Disposition"] = f"inline; filename=invoice-BK{booking_id}.pdf"
     return resp
 
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)

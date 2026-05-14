@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Reports | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Admin</p><h1>Reports</h1></div></section>
+<section class="stats-strip">
+    <div><a href="{{ url_for('admin_export_csv', report_type='bookings') }}">Export bookings</a></div>
+    <div><a href="{{ url_for('admin_export_csv', report_type='revenue') }}">Export revenue</a></div>
+    <div><a href="{{ url_for('admin_export_csv', report_type='fleet') }}">Export fleet</a></div>
+</section>
+<section class="two-column">
+    <div class="table-panel"><h2>Revenue by month</h2><table><tbody>{% for r in monthly %}<tr><td>{{ r.month }}</td><td>{{ r.bookings }}</td><td>R{{ "%.2f"|format(r.revenue or 0) }}</td></tr>{% else %}<tr><td>No revenue.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="table-panel"><h2>Top vehicles</h2><table><tbody>{% for v in top_vehicles %}<tr><td>{{ v.make }} {{ v.model }}</td><td>{{ v.trips }}</td><td>R{{ "%.2f"|format(v.revenue or 0) }}</td></tr>{% else %}<tr><td>No trips.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

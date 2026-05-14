@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DriveFlow — Admin Portal</title>
+<title>DriveFlow Rental — Admin Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -202,7 +202,7 @@ td.name{color:var(--text);font-weight:500}
     <div class="login-logo">
       <div class="login-icon"><i class="ti ti-car"></i></div>
       <div>
-        <div class="login-brand">DriveFlow</div>
+        <div class="login-brand">DriveFlow Rental</div>
         <div class="login-sub">Admin Portal</div>
       </div>
     </div>
@@ -231,7 +231,7 @@ td.name{color:var(--text);font-weight:500}
         <div class="brand-logo">
           <div class="brand-icon"><i class="ti ti-car"></i></div>
           <div>
-            <div class="brand-name">DriveFlow</div>
+            <div class="brand-name">DriveFlow Rental</div>
             <div class="brand-sub">Admin Portal</div>
           </div>
         </div>
@@ -266,7 +266,7 @@ td.name{color:var(--text);font-weight:500}
       <div class="topbar">
         <div>
           <div class="page-title" id="topbarTitle">Dashboard Overview</div>
-          <div class="page-sub" id="topbarSub">DriveFlow Rentals — Administrative View</div>
+          <div class="page-sub" id="topbarSub">DriveFlow Rental — Administrative View</div>
         </div>
         <div class="topbar-right">
           <button class="topbar-btn"><i class="ti ti-download"></i> Export</button>
@@ -472,7 +472,7 @@ td.name{color:var(--text);font-weight:500}
         <div class="page" id="page-settings">
           <div class="settings-section">
             <div class="settings-section-head">General</div>
-            <div class="settings-row"><div><div class="settings-label">Company name</div><div class="settings-desc">DriveFlow Rentals (Pty) Ltd</div></div></div>
+            <div class="settings-row"><div><div class="settings-label">Company name</div><div class="settings-desc">DriveFlow Rental (Pty) Ltd</div></div></div>
             <div class="settings-row"><div><div class="settings-label">Base currency</div><div class="settings-desc">South African Rand (ZAR)</div></div></div>
             <div class="settings-row"><div><div class="settings-label">Time zone</div><div class="settings-desc">Africa/Johannesburg (UTC+2)</div></div></div>
           </div>
@@ -544,7 +544,7 @@ function showPage(id, el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
   document.getElementById('topbarTitle').textContent = pageTitles[id]||id;
-  document.getElementById('topbarSub').textContent = 'DriveFlow Rentals — Administrative View';
+  document.getElementById('topbarSub').textContent = 'DriveFlow Rental — Administrative View';
 }
 
 function buildChart(containerId){

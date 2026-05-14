@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} vehicle | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="auth-card wide">
+    <p class="eyebrow">Admin</p>
+    <h1>{{ action }} vehicle</h1>
+    <form method="post">
+        {% if action == "Add" %}<label><span>VIN</span><input name="vin" required></label>{% endif %}
+        <div class="form-grid">
+            <label><span>Make</span><input name="make" value="{{ vehicle.make if vehicle else '' }}" required></label>
+            <label><span>Model</span><input name="model" value="{{ vehicle.model if vehicle else '' }}" required></label>
+            <label><span>Year</span><input type="number" name="year" value="{{ vehicle.year if vehicle else '2026' }}" required></label>
+            <label><span>Plate</span><input name="license_plate" value="{{ vehicle.license_plate if vehicle else '' }}" required></label>
+            <label><span>Category</span><select name="category">{% for c in ["Economy","SUV","Luxury"] %}<option {% if vehicle and vehicle.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+            <label><span>Daily rate</span><input type="number" step="0.01" name="daily_rate" value="{{ vehicle.daily_rate if vehicle else '' }}" required></label>
+            <label><span>Status</span><select name="status">{% for s in ["Available","Rented","Maintenance"] %}<option {% if vehicle and vehicle.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+        </div>
+        <button class="button" type="submit">Save vehicle</button>
+    </form>
+</section>
+{% endblock %}

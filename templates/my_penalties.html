@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Penalties | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Account</p><h1>Penalties</h1></div></section>
+<section class="stats-strip">
+    <div><strong>R{{ "%.2f"|format(totals.outstanding or 0) }}</strong><span>Outstanding</span></div>
+    <div><strong>{{ totals.unpaid_count or 0 }}</strong><span>Unpaid items</span></div>
+    <div><strong>R{{ "%.2f"|format(totals.paid_total or 0) }}</strong><span>Paid</span></div>
+</section>
+<section class="table-panel">
+    <table>
+        <thead><tr><th>Vehicle</th><th>Type</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for penalty in penalties %}
+            <tr><td>{{ penalty.make }} {{ penalty.model }}</td><td>{{ penalty.type }}</td><td>R{{ "%.2f"|format(penalty.amount) }}</td><td>{{ penalty.status }}</td><td>{% if penalty.status == 'Unpaid' %}<a href="{{ url_for('pay_penalty', penalty_id=penalty.id) }}">Pay</a>{% endif %}</td></tr>
+        {% else %}
+            <tr><td colspan="5">No penalties.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

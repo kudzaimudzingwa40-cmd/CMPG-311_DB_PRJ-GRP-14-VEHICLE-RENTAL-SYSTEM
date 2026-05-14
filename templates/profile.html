@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Profile | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="booking-layout">
+    <form class="booking-form" method="post">
+        <input type="hidden" name="action" value="update_info">
+        <h1>Profile</h1>
+        <label><span>Name</span><input name="name" value="{{ user.name }}" required></label>
+        <label><span>License number</span><input name="license" value="{{ user.license_number }}" required></label>
+        <button class="button" type="submit">Save profile</button>
+    </form>
+    <form class="summary-card" method="post">
+        <input type="hidden" name="action" value="change_password">
+        <h2>Change password</h2>
+        <label><span>Current password</span><input type="password" name="current_password" required></label>
+        <label><span>New password</span><input type="password" name="new_password" minlength="6" required></label>
+        <button class="button secondary" type="submit">Update password</button>
+    </form>
+</section>
+{% endblock %}

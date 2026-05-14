@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Staff fleet | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Staff</p><h1>Fleet operations</h1></div><a class="button small" href="{{ url_for('staff_add_maintenance') }}">Log maintenance</a></section>
+<section class="table-panel"><table><thead><tr><th>Vehicle</th><th>Status</th><th>Update</th></tr></thead><tbody>{% for v in vehicles %}<tr><td>{{ v.make }} {{ v.model }}<br><span class="muted">{{ v.license_plate }}</span></td><td>{{ v.status }}</td><td><form method="post" action="{{ url_for('staff_update_status', vehicle_id=v.id) }}" class="inline-form"><select name="status"><option>Available</option><option>Rented</option><option>Maintenance</option></select><button>Save</button></form></td></tr>{% else %}<tr><td colspan="3">No vehicles.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

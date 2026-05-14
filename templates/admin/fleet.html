@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Fleet admin | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading">
+    <div><p class="eyebrow">Admin</p><h1>Fleet management</h1></div>
+    <a class="button small" href="{{ url_for('admin_add_vehicle') }}">Add vehicle</a>
+</section>
+<section class="table-panel">
+    <table><thead><tr><th>Vehicle</th><th>Category</th><th>Rate</th><th>Status</th><th>Rating</th><th>Actions</th></tr></thead><tbody>
+    {% for v in vehicles %}
+        <tr>
+            <td>{{ v.year }} {{ v.make }} {{ v.model }}<br><span class="muted">{{ v.license_plate }}</span></td>
+            <td>{{ v.category }}</td><td>R{{ "%.2f"|format(v.daily_rate) }}</td><td>{{ v.status }}</td><td>{{ v.avg_rating or 0 }}</td>
+            <td><a href="{{ url_for('admin_edit_vehicle', vehicle_id=v.id) }}">Edit</a></td>
+        </tr>
+    {% else %}<tr><td colspan="6">No vehicles.</td></tr>{% endfor %}
+    </tbody></table>
+</section>
+{% endblock %}

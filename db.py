@@ -179,6 +179,20 @@ def init_db():
         ]
         c.executemany("INSERT INTO vehicles (vin,make,model,year,license_plate,category,daily_rate,status,mileage) VALUES (?,?,?,?,?,?,?,?,?)", vehicles)
 
+    image_updates = [
+        ("https://images.unsplash.com/photo-1623869675781-80aa31012a5a?auto=format&fit=crop&w=1200&q=80", "Toyota", "Corolla"),
+        ("https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=1200&q=80", "Toyota", "Camry"),
+        ("https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80", "Honda", "Civic"),
+        ("https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=80", "Ford", "Explorer"),
+        ("https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1200&q=80", "Toyota", "Fortuner"),
+        ("https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=1200&q=80", "Nissan", "Pathfinder"),
+        ("https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=80", "BMW", "5 Series"),
+        ("https://images.unsplash.com/photo-1617814076668-18b6e3db31b3?auto=format&fit=crop&w=1200&q=80", "Mercedes", "C-Class"),
+        ("https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1200&q=80", "Audi", "A6"),
+        ("https://images.unsplash.com/photo-1617469767053-d3b523a0b982?auto=format&fit=crop&w=1200&q=80", "Volkswagen", "Polo"),
+    ]
+    c.executemany("UPDATE vehicles SET image_url=? WHERE make=? AND model=? AND (image_url IS NULL OR image_url='')", image_updates)
+
     if c.execute("SELECT COUNT(*) FROM promo_codes").fetchone()[0] == 0:
         c.executemany("INSERT INTO promo_codes (code,description,discount_type,discount_value,min_booking_amount,max_uses) VALUES (?,?,?,?,?,?)",[
             ("WELCOME10","10% off for new customers","percent",10,0,500),

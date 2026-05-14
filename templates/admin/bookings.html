@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Bookings admin | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Admin</p><h1>Bookings</h1></div></section>
+<section class="table-panel">
+    <table><thead><tr><th>#</th><th>Customer</th><th>Vehicle</th><th>Dates</th><th>Status</th><th>Total</th></tr></thead><tbody>
+    {% for b in bookings %}
+        <tr><td><a href="{{ url_for('admin_booking_detail', booking_id=b.id) }}">BK-{{ b.id }}</a></td><td>{{ b.customer_name }}</td><td>{{ b.make }} {{ b.model }}</td><td>{{ b.pickup_date }} to {{ b.return_date }}</td><td>{{ b.status }}</td><td>R{{ "%.2f"|format(b.total_amount) }}</td></tr>
+    {% else %}<tr><td colspan="6">No bookings.</td></tr>{% endfor %}
+    </tbody></table>
+</section>
+{% endblock %}
