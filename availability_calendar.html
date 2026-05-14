@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Vehicle Availability</h2>
+
+<table border="1">
+
+<tr>
+    <th>Vehicle</th>
+    <th>Status</th>
+    <th>Available Until</th>
+</tr>
+
+{% for vehicle in vehicles %}
+
+<tr>
+
+<td>{{ vehicle.name }}</td>
+
+<td>{{ vehicle.status }}</td>
+
+<td>{{ vehicle.available_until }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}

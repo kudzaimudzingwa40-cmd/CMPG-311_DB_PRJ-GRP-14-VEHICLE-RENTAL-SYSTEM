@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Payment Successful</h1>
+
+<p>Transaction ID:</p>
+
+<h3>{{ transaction.transaction_id }}</h3>
+
+<a href="/vehicles">
+    Back to Vehicles
+</a>
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Secure Payment</h2>
+
+<form method="POST">
+
+    <input type="text"
+           name="card_token"
+           placeholder="tok_test_visa"
+           required>
+
+    <button type="submit">
+        Pay Now
+    </button>
+
+</form>
+
+{% if error %}
+<p>{{ error }}</p>
+{% endif %}
+
+{% endblock %}
