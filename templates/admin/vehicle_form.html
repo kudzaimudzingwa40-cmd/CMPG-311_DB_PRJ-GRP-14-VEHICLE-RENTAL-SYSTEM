@@ -15,6 +15,7 @@
             <label><span>Category</span><select name="category">{% for c in ["Economy","SUV","Luxury"] %}<option {% if vehicle and vehicle.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
             <label><span>Daily rate</span><input type="number" step="0.01" name="daily_rate" value="{{ vehicle.daily_rate if vehicle else '' }}" required></label>
             <label><span>Status</span><select name="status">{% for s in ["Available","Rented","Maintenance"] %}<option {% if vehicle and vehicle.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+            <label><span>Image URL</span><input name="image_url" value="{{ vehicle.image_url if vehicle and vehicle.image_url else '' }}" placeholder="https://example.com/car-photo.jpg"></label>
         </div>
         <button class="button" type="submit">Save vehicle</button>
     </form>

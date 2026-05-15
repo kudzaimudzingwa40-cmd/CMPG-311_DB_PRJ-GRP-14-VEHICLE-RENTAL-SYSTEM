@@ -659,10 +659,11 @@ def admin_add_vehicle():
     if request.method == "POST":
         db = get_db()
         try:
-            db.execute("INSERT INTO vehicles (vin,make,model,year,license_plate,category,daily_rate,status) VALUES (?,?,?,?,?,?,?,?)",
+            image_url = request.form.get("image_url", "").strip() or None
+            db.execute("INSERT INTO vehicles (vin,make,model,year,license_plate,category,daily_rate,status,image_url) VALUES (?,?,?,?,?,?,?,?,?)",
                 (request.form["vin"],request.form["make"],request.form["model"],
                  int(request.form["year"]),request.form["license_plate"],
-                 request.form["category"],float(request.form["daily_rate"]),request.form["status"]))
+                 request.form["category"],float(request.form["daily_rate"]),request.form["status"],image_url))
             db.commit()
             audit(session["user_id"],"ADD_VEHICLE","vehicles",None,request.form["make"]+" "+request.form["model"])
             flash("Vehicle added.", "success")
@@ -678,10 +679,11 @@ def admin_edit_vehicle(vehicle_id):
     db = get_db()
     vehicle = db.execute("SELECT * FROM vehicles WHERE id=?", (vehicle_id,)).fetchone()
     if request.method == "POST":
-        db.execute("UPDATE vehicles SET make=?,model=?,year=?,license_plate=?,category=?,daily_rate=?,status=? WHERE id=?",
+        image_url = request.form.get("image_url", "").strip() or None
+        db.execute("UPDATE vehicles SET make=?,model=?,year=?,license_plate=?,category=?,daily_rate=?,status=?,image_url=? WHERE id=?",
             (request.form["make"],request.form["model"],int(request.form["year"]),
              request.form["license_plate"],request.form["category"],float(request.form["daily_rate"]),
-             request.form["status"],vehicle_id))
+             request.form["status"],image_url,vehicle_id))
         db.commit()
         audit(session["user_id"],"EDIT_VEHICLE","vehicles",vehicle_id)
         flash("Vehicle updated.", "success")
