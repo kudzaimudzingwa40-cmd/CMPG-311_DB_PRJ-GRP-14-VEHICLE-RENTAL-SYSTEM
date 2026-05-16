@@ -1,29 +1,34 @@
-from flask import render_template, g
-# Import get_db from your main app file
-from app import get_db 
+from flask import Blueprint, render_template
 
-@app.route('/availability')
+from db import get_db
+
+
+vehicle_bp = Blueprint("vehicle_routes", __name__)
+
+
+@vehicle_bp.route("/availability")
 def availability():
-    # 1. Get the database connection
     db = get_db()
-
-    # 2. Execute the Raw SQL query
-    # We use '?' for placeholders in SQLite if needed
-    query = """
-        SELECT 
-            v.name, 
-            v.status, 
-            MAX(b.end_date) AS available_until
+    vehicles = db.execute("""
+        SELECT
+            v.id,
+            v.make || ' ' || v.model AS vehicle_name,
+            v.license_plate,
+            v.status,
+            MIN(CASE
+                WHEN b.status IN ('Awaiting Payment','Confirmed')
+                     AND b.return_date >= date('now')
+                THEN b.pickup_date
+            END) AS next_booking_start,
+            MIN(CASE
+                WHEN b.status IN ('Awaiting Payment','Confirmed')
+                     AND b.return_date >= date('now')
+                THEN b.return_date
+            END) AS next_booking_return
         FROM vehicles v
-        LEFT JOIN bookings b ON v.id = b.vehicle_id
+        LEFT JOIN bookings b ON b.vehicle_id = v.id
         GROUP BY v.id
-    """
-    
-    # 3. Fetch all results
-    vehicles = db.execute(query).fetchall()
-
-    # 4. Render the template with the data
-    return render_template(
-        'availability_calendar.html', 
-        vehicles=vehicles
-    )
+        ORDER BY v.category, v.make, v.model
+    """).fetchall()
+    db.close()
+    return render_template("availability_calendar.html", vehicles=vehicles)

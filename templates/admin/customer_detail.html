@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Customer</p><h1>{{ customer.name }}</h1><p>{{ customer.email }}</p></div></section>
+<section class="stats-strip">
+    <div><strong>{{ stats.total_bookings or 0 }}</strong><span>Bookings</span></div>
+    <div><strong>R{{ "%.2f"|format(stats.total_spent or 0) }}</strong><span>Spent</span></div>
+    <div><strong>R{{ "%.2f"|format(stats.penalty_balance or 0) }}</strong><span>Penalty balance</span></div>
+</section>
+<section class="table-panel"><h2>Bookings</h2><table><tbody>{% for b in bookings %}<tr><td>{{ b.make }} {{ b.model }}</td><td>{{ b.status }}</td><td>R{{ "%.2f"|format(b.total_amount) }}</td></tr>{% else %}<tr><td>No bookings.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

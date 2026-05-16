@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Promo codes | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="booking-layout">
+    <form class="booking-form" method="post" action="{{ url_for('admin_add_promo') }}">
+        <p class="eyebrow">Admin</p><h1>Promo codes</h1>
+        <label><span>Code</span><input name="code" required></label>
+        <label><span>Description</span><input name="description"></label>
+        <div class="form-grid"><label><span>Type</span><select name="discount_type"><option value="percent">Percent</option><option value="flat">Flat</option></select></label><label><span>Value</span><input type="number" step="0.01" name="discount_value" required></label></div>
+        <button class="button" type="submit">Create promo</button>
+    </form>
+    <div class="summary-card"><h2>Active offers</h2>{% for p in promos %}<p><strong>{{ p.code }}</strong> · {{ p.description }} · {{ p.discount_value }} {{ p.discount_type }}</p>{% else %}<p>No promos.</p>{% endfor %}</div>
+</section>
+{% endblock %}

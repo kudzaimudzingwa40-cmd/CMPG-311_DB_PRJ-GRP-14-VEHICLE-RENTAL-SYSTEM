@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Customers | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Admin</p><h1>Customers</h1></div></section>
+<section class="compact-search"><form method="get"><input name="search" value="{{ search }}" placeholder="Search customers"><button>Search</button></form></section>
+<section class="table-panel"><table><thead><tr><th>Name</th><th>Email</th><th>License</th><th>Points</th></tr></thead><tbody>
+{% for c in customers %}<tr><td><a href="{{ url_for('admin_customer_detail', user_id=c.id) }}">{{ c.name }}</a></td><td>{{ c.email }}</td><td>{{ c.license_number }}</td><td>{{ c.loyalty_points }}</td></tr>{% else %}<tr><td colspan="4">No customers.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

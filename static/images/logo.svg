@@ -1,0 +1,29 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">DriveFlow Rental logo</title>
+  <desc id="desc">A premium car silhouette inside a flowing road badge.</desc>
+  <defs>
+    <linearGradient id="badge" x1="29" y1="19" x2="151" y2="164" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00A3FF"/>
+      <stop offset="0.55" stop-color="#006CE4"/>
+      <stop offset="1" stop-color="#003B95"/>
+    </linearGradient>
+    <linearGradient id="road" x1="51" y1="49" x2="139" y2="139" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FECA30"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="shadow" x="18" y="18" width="144" height="144" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0B2454" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <circle cx="90" cy="90" r="70" fill="url(#badge)" filter="url(#shadow)"/>
+  <path d="M44 112C61 83 88 62 132 54C104 76 88 99 80 130C71 120 59 114 44 112Z" fill="url(#road)"/>
+  <path d="M62 105L76 80C78.5 75.5 82.9 72.5 88 72L114 69.5C120.3 68.9 126.1 72.2 128.9 77.8L141 102.5C143.1 106.8 139.9 112 135.1 112H68C63 112 59.5 109.3 62 105Z" fill="white"/>
+  <path d="M77 95L86.8 80.8C88.1 78.9 90.1 77.8 92.4 77.6L113.2 76C116 75.8 118.6 77.2 120 79.6L128.7 95H77Z" fill="#DCEBFF"/>
+  <path d="M77 95L86.8 80.8C88.1 78.9 90.1 77.8 92.4 77.6L113.2 76C116 75.8 118.6 77.2 120 79.6L128.7 95H77Z" stroke="#003B95" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M57 105H145" stroke="#003B95" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="78" cy="112" r="13" fill="#10243D"/>
+  <circle cx="78" cy="112" r="5" fill="#FECA30"/>
+  <circle cx="124" cy="112" r="13" fill="#10243D"/>
+  <circle cx="124" cy="112" r="5" fill="#FECA30"/>
+  <path d="M62 60C73 48 86 42 101 41" stroke="white" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+</svg>

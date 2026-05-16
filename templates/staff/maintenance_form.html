@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Log maintenance | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="auth-card wide">
+    <p class="eyebrow">Staff</p><h1>Log maintenance</h1>
+    <form method="post">
+        <label><span>Vehicle</span><select name="vehicle_id">{% for v in vehicles %}<option value="{{ v.id }}">{{ v.make }} {{ v.model }} · {{ v.license_plate }}</option>{% endfor %}</select></label>
+        <label><span>Type</span><select name="type"><option>Service</option><option>Major Service</option><option>Repair</option></select></label>
+        <label><span>Description</span><textarea name="description"></textarea></label>
+        <div class="form-grid"><label><span>Cost</span><input type="number" step="0.01" name="cost"></label><label><span>Mileage</span><input type="number" name="mileage"></label><label><span>Service date</span><input type="date" name="service_date" required></label><label><span>Next service date</span><input type="date" name="next_service_date"></label></div>
+        <button class="button" type="submit">Save maintenance</button>
+    </form>
+</section>
+{% endblock %}

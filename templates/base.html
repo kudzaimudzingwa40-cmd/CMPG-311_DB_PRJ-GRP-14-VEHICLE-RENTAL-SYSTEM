@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DriveFlow Rental{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{{ url_for('index') }}" aria-label="DriveFlow Rental home">
+            <img class="brand-logo" src="{{ url_for('static', filename='images/logo.svg') }}" alt="">
+            <span>DriveFlow Rental</span>
+        </a>
+        <nav class="nav-links" aria-label="Main navigation">
+            <a href="{{ url_for('vehicles') }}">Cars</a>
+            {% if session.user_id %}
+                {% if session.role == 'customer' %}
+                    <a href="{{ url_for('dashboard') }}">Trips</a>
+                    <a href="{{ url_for('my_penalties') }}">Penalties</a>
+                {% elif session.role == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+                {% elif session.role == 'staff' %}
+                    <a href="{{ url_for('staff_fleet') }}">Staff</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Sign in</a>
+                <a class="nav-cta" href="{{ url_for('register') }}">Register</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="toast-wrap">
+                {% for category, message in messages %}
+                    <div class="toast {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <span>DriveFlow Rental</span>
+        <span>Simple booking. Clear pricing. Managed fleet.</span>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

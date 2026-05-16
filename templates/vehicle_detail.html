@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ vehicle.make }} {{ vehicle.model }} | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+    <div class="detail-image" style="background-image: url('{{ vehicle.image_url or 'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1200&q=80' }}')"></div>
+    <div class="detail-summary">
+        <p class="eyebrow">{{ vehicle.category }}</p>
+        <h1>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
+        <p class="muted">{{ vehicle.license_plate }} · {{ vehicle.mileage or 0 }} km · {{ vehicle.status }}</p>
+        <div class="price-panel">
+            <span>From</span>
+            <strong>R{{ "%.2f"|format(vehicle.daily_rate) }}</strong>
+            <span>per day</span>
+        </div>
+        <a class="button" href="{{ url_for('book', vehicle_id=vehicle.id, pickup_date=request.args.get('pickup_date',''), return_date=request.args.get('return_date','')) }}">Book this car</a>
+    </div>
+</section>
+
+<section class="two-column">
+    <div class="panel">
+        <h2>Included in your deal</h2>
+        <ul class="check-list">
+            <li>Clear booking confirmation after payment</li>
+            <li>Loyalty points on completed rentals</li>
+            <li>Optional deposit handling</li>
+            <li>Admin-tracked fleet condition and maintenance</li>
+        </ul>
+    </div>
+    <div class="panel">
+        <h2>Customer reviews</h2>
+        <p class="rating-large">{{ avg_rating or 0 }} / 5</p>
+        {% for review in reviews[:3] %}
+            <blockquote>{{ review.comment or "Smooth rental experience." }}<span>{{ review.customer_name }}</span></blockquote>
+        {% else %}
+            <p class="muted">No reviews yet for this vehicle.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

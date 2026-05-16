@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}My trips | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Welcome{% if user %}, {{ user.name }}{% endif %}</p>
+        <h1>My trips</h1>
+    </div>
+    <a class="button small" href="{{ url_for('export_my_bookings') }}">Export bookings</a>
+</section>
+
+<section class="stats-strip">
+    <div><strong>{{ bookings|length }}</strong><span>Total bookings</span></div>
+    <div><strong>{{ user.loyalty_points if user else session.points or 0 }}</strong><span>Loyalty points</span></div>
+    <div><strong>R{{ "%.2f"|format(all_penalties|sum(attribute='amount') if all_penalties else 0) }}</strong><span>Unpaid penalties</span></div>
+</section>
+
+<section class="trip-list">
+    {% for booking in bookings %}
+        <article class="trip-card">
+            <div>
+                <p class="eyebrow">#BK-{{ booking.id }} · {{ booking.status }}</p>
+                <h2>{{ booking.year }} {{ booking.make }} {{ booking.model }}</h2>
+                <p class="muted">{{ booking.pickup_date }} to {{ booking.return_date }} · {{ booking.license_plate }}</p>
+            </div>
+            <div class="trip-actions">
+                <strong>R{{ "%.2f"|format(booking.total_amount) }}</strong>
+                {% if booking.status == 'Awaiting Payment' %}<a class="button small" href="{{ url_for('payment', booking_id=booking.id) }}">Pay now</a>{% endif %}
+                {% if booking.status == 'Confirmed' %}<a class="button small secondary" href="{{ url_for('extend_booking', booking_id=booking.id) }}">Extend</a>{% endif %}
+                {% if booking.status in ['Awaiting Payment', 'Confirmed'] %}
+                    <form method="post" action="{{ url_for('cancel_booking', booking_id=booking.id) }}" class="inline-form">
+                        <button class="button small secondary" type="submit">Cancel</button>
+                    </form>
+                {% endif %}
+                {% if booking.status == 'Returned' and not booking.has_review %}<a class="button small secondary" href="{{ url_for('submit_review', booking_id=booking.id) }}">Review</a>{% endif %}
+            </div>
+        </article>
+    {% else %}
+        <div class="empty-state"><h2>No trips yet</h2><p>Find a car and your bookings will appear here.</p><a class="button" href="{{ url_for('vehicles') }}">Browse cars</a></div>
+    {% endfor %}
+</section>
+{% endblock %}

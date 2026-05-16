@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Audit log | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading"><div><p class="eyebrow">Admin</p><h1>Audit log</h1></div></section>
+<section class="table-panel"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead><tbody>{% for l in logs %}<tr><td>{{ l.created_at }}</td><td>{{ l.user_name or 'System' }}</td><td>{{ l.action }}</td><td>{{ l.entity }}</td><td>{{ l.detail }}</td></tr>{% else %}<tr><td colspan="5">No logs.</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

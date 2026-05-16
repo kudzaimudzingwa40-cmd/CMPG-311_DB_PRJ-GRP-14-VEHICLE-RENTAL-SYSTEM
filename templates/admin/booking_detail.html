@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Booking #{{ booking.id }} | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="booking-layout">
+    <div class="panel">
+        <p class="eyebrow">Booking #{{ booking.id }}</p>
+        <h1>{{ booking.make }} {{ booking.model }}</h1>
+        <p>{{ booking.customer_name }} · {{ booking.customer_email }}</p>
+        <p class="muted">{{ booking.pickup_date }} to {{ booking.return_date }} · {{ booking.status }}</p>
+        {% if payment %}<p>Payment ref: {{ payment.reference }}</p>{% endif %}
+    </div>
+    <div class="summary-card">
+        <h2>Admin actions</h2>
+        {% if booking.status == 'Confirmed' %}
+        <form method="post" action="{{ url_for('admin_process_return', booking_id=booking.id) }}">
+            <label><span>Actual return date</span><input type="date" name="actual_return_date" required></label>
+            <label><span>Condition</span><select name="condition"><option>Good</option><option>Damaged</option></select></label>
+            <label><span>Damage fee if damaged</span><input type="number" step="0.01" name="damage_amount" value="1500"></label>
+            <label><span>Return mileage</span><input type="number" name="return_mileage" value="0"></label>
+            <label><span>Notes</span><textarea name="notes"></textarea></label>
+            <button class="button" type="submit">Process return</button>
+        </form>
+        {% else %}<p class="muted">No return action available for this status.</p>{% endif %}
+    </div>
+</section>
+{% endblock %}

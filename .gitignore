@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+driveflow.db
+.env
+.venv/
+venv/

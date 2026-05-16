@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Maintenance | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="booking-layout">
+    <form class="booking-form" method="post" action="{{ url_for('admin_add_maintenance') }}">
+        <p class="eyebrow">Admin</p><h1>Maintenance</h1>
+        <label><span>Vehicle</span><select name="vehicle_id">{% for v in vehicles %}<option value="{{ v.id }}">{{ v.make }} {{ v.model }} · {{ v.license_plate }}</option>{% endfor %}</select></label>
+        <label><span>Type</span><input name="type" required></label>
+        <label><span>Service date</span><input type="date" name="service_date" required></label>
+        <label><span>Description</span><textarea name="description"></textarea></label>
+        <button class="button" type="submit">Add log</button>
+    </form>
+    <div class="summary-card"><h2>Recent logs</h2>{% for log in logs[:8] %}<p>{{ log.service_date }} · {{ log.make }} {{ log.model }} · {{ log.type }}</p>{% else %}<p>No logs.</p>{% endfor %}</div>
+</section>
+{% endblock %}

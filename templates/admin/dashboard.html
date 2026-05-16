@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Admin dashboard | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="admin-shell">
+    <nav class="admin-nav">
+        <a href="{{ url_for('admin_dashboard') }}">Overview</a>
+        <a href="{{ url_for('admin_fleet') }}">Fleet</a>
+        <a href="{{ url_for('admin_bookings') }}">Bookings</a>
+        <a href="{{ url_for('admin_customers') }}">Customers</a>
+        <a href="{{ url_for('admin_reports') }}">Reports</a>
+        <a href="{{ url_for('admin_promos') }}">Promos</a>
+    </nav>
+    <div class="admin-main">
+        <div class="section-heading tight"><div><p class="eyebrow">Admin</p><h1>Operations dashboard</h1></div></div>
+        <section class="stats-strip">
+            <div><strong>{{ stats.total_vehicles }}</strong><span>Vehicles</span></div>
+            <div><strong>{{ stats.available }}</strong><span>Available</span></div>
+            <div><strong>{{ stats.active_bookings }}</strong><span>Active bookings</span></div>
+            <div><strong>R{{ "%.2f"|format(stats.total_revenue) }}</strong><span>Revenue</span></div>
+        </section>
+        <section class="table-panel">
+            <h2>Recent bookings</h2>
+            <table><thead><tr><th>Customer</th><th>Vehicle</th><th>Status</th><th>Amount</th></tr></thead><tbody>
+            {% for b in recent_bookings %}
+                <tr><td>{{ b.customer_name }}</td><td>{{ b.make }} {{ b.model }}</td><td>{{ b.status }}</td><td>R{{ "%.2f"|format(b.total_amount) }}</td></tr>
+            {% else %}<tr><td colspan="4">No bookings yet.</td></tr>{% endfor %}
+            </tbody></table>
+        </section>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Receipt | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="receipt">
+    <p class="eyebrow">Booking confirmed</p>
+    <h1>You're ready to drive.</h1>
+    <div class="receipt-card">
+        <div>
+            <h2>{{ booking.year }} {{ booking.make }} {{ booking.model }}</h2>
+            <p>{{ booking.pickup_date }} to {{ booking.return_date }}</p>
+            <p>{{ booking.customer_name }} · {{ booking.customer_email }}</p>
+        </div>
+        <div>
+            <span>Reference</span>
+            <strong>{{ payment.reference }}</strong>
+            <span>Amount paid</span>
+            <strong>R{{ "%.2f"|format(payment.amount) }}</strong>
+            <span>Booking total</span>
+            <strong>R{{ "%.2f"|format(booking.total_amount) }}</strong>
+        </div>
+    </div>
+    <a class="button" href="{{ url_for('dashboard') }}">View my trips</a>
+</section>
+{% endblock %}

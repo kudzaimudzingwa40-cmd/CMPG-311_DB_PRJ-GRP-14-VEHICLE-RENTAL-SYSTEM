@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Penalty receipt | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="receipt">
+    <p class="eyebrow">Payment received</p>
+    <h1>Penalty settled</h1>
+    <div class="receipt-card"><div><h2>{{ penalty.type }}</h2><p>Reference {{ reference }}</p></div><div><span>Amount</span><strong>R{{ "%.2f"|format(penalty.amount) }}</strong></div></div>
+    <a class="button" href="{{ url_for('my_penalties') }}">Back to penalties</a>
+</section>
+{% endblock %}
