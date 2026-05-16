@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveFlow Car Rental</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <a class="brand" href="/">
+            <img src="/static/images/logo.svg" alt="DriveFlows logo" class="logo-image">
+            <span>DriveFlow</span>
+        </a>
+
+        <nav>
+            <a href="/">Home</a>
+
+            {% if session.user_id %}
+                <a href="/dashboard">Dashboard</a>
+                <a href="/vehicles">Vehicles</a>
+                <a href="/bookings">Bookings</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
+
+            <!-- Dark Mode Toggle Button -->
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">
+                🌙
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="messages">
+              {% for message in messages %}
+                <div class="message">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>DriveFlow Car Rental © 2026</p>
+    </footer>
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Processing...</div>
+    </div>
+
+    <script>
+    // ===== DARK MODE =====
+    (function() {
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Check for saved preference or system preference
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        let currentTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+        // Force light as default if nothing saved
+        if (!savedTheme) {
+            currentTheme = 'light';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        setTheme(currentTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const newTheme =
+                document.documentElement.getAttribute('data-theme') === 'dark'
+                    ? 'light'
+                    : 'dark';
+
+            setTheme(newTheme);
+        });
+
+        // Optional: listen to system changes
+        window.matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    setTheme(e.matches ? 'dark' : 'light');
+                }
+            });
+    })();
+
+    // ===== LOADING SPINNER ON FORM SUBMISSION =====
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        const overlay = document.getElementById('loadingOverlay');
+
+        forms.forEach(form => {
+            form.addEventListener('submit', function() {
+
+                // Don't show spinner if form has validation errors
+                if (form.checkValidity && !form.checkValidity()) {
+                    return;
+                }
+
+                overlay.classList.add('active');
+
+                // Disable submit buttons to prevent double-clicks
+                const buttons = form.querySelectorAll('button[type="submit"]');
+
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.6';
+                });
+            });
+        });
+
+        // Hide spinner when page loads fully
+        window.addEventListener('pageshow', function() {
+            overlay.classList.remove('active');
+
+            // Re-enable buttons
+            document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '';
+            });
+        });
+    });
+    </script>
+</body>
+</html>
