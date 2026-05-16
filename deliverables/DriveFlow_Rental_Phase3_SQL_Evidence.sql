@@ -1,20 +1,9 @@
-import sqlite3
-import os
-from werkzeug.security import generate_password_hash
+-- DriveFlow Rental Phase 3 SQL Evidence
+-- Raw SQL statements for physical design, database objects, and query requirements.
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "driveflow.db")
+-- Complete schema block from db.py: tables, constraints, indexes, and views
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-    c.executescript("""
-        CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
@@ -51,7 +40,7 @@ def init_db():
             deposit_amount REAL DEFAULT 0 CHECK (deposit_amount >= 0),
             deposit_status TEXT DEFAULT 'None',
             status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending','Awaiting Payment','Confirmed','Cancelled','Returned')),
-            created_at TEXT DEFAULT (datetime('now')),
+            created_at TEXT DEFAULT (datetime('now'))
             CHECK (julianday(return_date) > julianday(pickup_date))
         );
         CREATE TABLE IF NOT EXISTS payments (
@@ -192,72 +181,95 @@ def init_db():
         LEFT JOIN penalties p ON p.booking_id = b.id
         WHERE u.role = 'customer'
         GROUP BY u.id, u.name, u.email;
-    """)
 
-   
-    if not c.execute("SELECT id FROM users WHERE email='admin@driveflow.com'").fetchone():
-        c.execute("INSERT INTO users (name,email,password_hash,license_number,role) VALUES (?,?,?,?,?)",
-            ("Admin","admin@driveflow.com",generate_password_hash("admin123"),"ADMIN-000","admin"))
+-- Query evidence mapped to Phase 3 requirements
 
-   
-    if not c.execute("SELECT id FROM users WHERE email='staff@driveflow.com'").fetchone():
-        c.execute("INSERT INTO users (name,email,password_hash,license_number,role) VALUES (?,?,?,?,?)",
-            ("Fleet Manager","staff@driveflow.com",generate_password_hash("staff123"),"STAFF-001","staff"))
+-- Core table creation example
+CREATE TABLE IF NOT EXISTS vehicles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vin TEXT UNIQUE NOT NULL,
+    make TEXT NOT NULL,
+    model TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    license_plate TEXT UNIQUE NOT NULL,
+    category TEXT NOT NULL CHECK (category IN ('Economy','SUV','Luxury')),
+    daily_rate REAL NOT NULL CHECK (daily_rate > 0),
+    status TEXT NOT NULL DEFAULT 'Available'
+        CHECK (status IN ('Available','Rented','Maintenance')),
+    mileage INTEGER DEFAULT 0 CHECK (mileage >= 0),
+    last_service_mileage INTEGER DEFAULT 0 CHECK (last_service_mileage >= 0),
+    next_service_date TEXT,
+    image_url TEXT
+);
 
-    if not c.execute("SELECT id FROM users WHERE email='customer@driveflow.com'").fetchone():
-        c.execute("INSERT INTO users (name,email,password_hash,license_number,role,loyalty_points) VALUES (?,?,?,?,?,?)",
-            ("Demo Customer","customer@driveflow.com",generate_password_hash("customer123"),"CUST-2026-001","customer",250))
-        uid = c.execute("SELECT last_insert_rowid()").fetchone()[0]
-        c.execute("INSERT INTO loyalty_transactions (user_id,points,type,description) VALUES (?,?,?,?)",
-            (uid, 250, "welcome", "Demo customer starter balance"))
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_vehicles_category_status
+ON vehicles(category, status);
 
-   
-    if c.execute("SELECT COUNT(*) FROM vehicles").fetchone()[0] == 0:
-        vehicles = [
-            ("VIN001","Toyota","Corolla",2022,"CA-001-GP","Economy",450.00,"Available",45000),
-            ("VIN002","Toyota","Camry",2023,"CA-002-GP","Economy",550.00,"Available",12000),
-            ("VIN003","Honda","Civic",2022,"CA-003-GP","Economy",480.00,"Available",38000),
-            ("VIN004","Ford","Explorer",2023,"CA-004-GP","SUV",850.00,"Available",22000),
-            ("VIN005","Toyota","Fortuner",2023,"CA-005-GP","SUV",950.00,"Rented",18000),
-            ("VIN006","Nissan","Pathfinder",2022,"CA-006-GP","SUV",900.00,"Available",31000),
-            ("VIN007","BMW","5 Series",2023,"CA-007-GP","Luxury",1800.00,"Available",8000),
-            ("VIN008","Mercedes","C-Class",2023,"CA-008-GP","Luxury",2000.00,"Available",5500),
-            ("VIN009","Audi","A6",2022,"CA-009-GP","Luxury",1900.00,"Maintenance",41000),
-            ("VIN010","Volkswagen","Polo",2023,"CA-010-GP","Economy",420.00,"Available",15000),
-        ]
-        c.executemany("INSERT INTO vehicles (vin,make,model,year,license_plate,category,daily_rate,status,mileage) VALUES (?,?,?,?,?,?,?,?,?)", vehicles)
+CREATE INDEX IF NOT EXISTS idx_bookings_vehicle_dates
+ON bookings(vehicle_id, pickup_date, return_date);
 
-    image_updates = [
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/Toyota%20Corolla%202.0%20XEi%202022.jpg?width=1200", "Toyota", "Corolla"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/Toyota%20Camry%202.5%20Hybrid%20%282023%29%20%2853130732285%29.jpg?width=1200", "Toyota", "Camry"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/2022%20Honda%20Civic.jpg?width=1200", "Honda", "Civic"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/2023%20Ford%20Explorer.jpg?width=1200", "Ford", "Explorer"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/Toyota%20Fortuner%202.4%20G%204x2%202023.jpg?width=1200", "Toyota", "Fortuner"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/2022%20Nissan%20Pathfinder%20SV.jpg?width=1200", "Nissan", "Pathfinder"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/BMW%205-Series%20%28G30%29%20530d%20xDrive%20%282023%29%20%2853333798201%29.jpg?width=1200", "BMW", "5 Series"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/Mercedes-Benz%20C-Klasse%20%28W206%29%20C%20300%20%282023%29%20%2853491181737%29.jpg?width=1200", "Mercedes", "C-Class"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/Audi%20A6%20C8.jpg?width=1200", "Audi", "A6"),
-        ("https://commons.wikimedia.org/wiki/Special:FilePath/2023%20Volkswagen%20Polo%20Track%201.6%20MSi.jpg?width=1200", "Volkswagen", "Polo"),
-    ]
-    # Replace the original generic Unsplash seeds while preserving admin-provided image URLs.
-    c.executemany(
-        "UPDATE vehicles SET image_url=? WHERE make=? AND model=? AND (image_url IS NULL OR image_url='' OR image_url LIKE 'https://images.unsplash.com/%')",
-        image_updates
-    )
+CREATE INDEX IF NOT EXISTS idx_bookings_user_status
+ON bookings(user_id, status);
 
-    if c.execute("SELECT COUNT(*) FROM promo_codes").fetchone()[0] == 0:
-        c.executemany("INSERT INTO promo_codes (code,description,discount_type,discount_value,min_booking_amount,max_uses) VALUES (?,?,?,?,?,?)",[
-            ("WELCOME10","10% off for new customers","percent",10,0,500),
-            ("FLAT200","R200 off bookings over R1000","flat",200,1000,100),
-            ("VIP25","25% loyalty discount","percent",25,500,50),
-        ])
+-- Views
+CREATE VIEW IF NOT EXISTS vw_booking_summary AS
+SELECT b.id AS booking_id, u.name AS customer_name, u.email AS customer_email,
+       v.make || ' ' || v.model AS vehicle_name, v.category,
+       b.pickup_date, b.return_date, b.total_amount, b.discount_amount, b.status
+FROM bookings b
+JOIN users u ON u.id = b.user_id
+JOIN vehicles v ON v.id = b.vehicle_id;
 
-    conn.commit()
-    conn.close()
+-- Query 1: vehicle search with LIKE, AND, OR, sorting, and row limitation
+SELECT id, make, model, year, category, daily_rate
+FROM vehicles
+WHERE status != 'Maintenance'
+  AND (make LIKE :search_term OR model LIKE :search_term)
+ORDER BY category, daily_rate
+LIMIT 20;
 
-def audit(user_id, action, entity, entity_id=None, detail=None, ip=None):
-    db = get_db()
-    db.execute("INSERT INTO audit_logs (user_id,action,entity,entity_id,detail,ip_address) VALUES (?,?,?,?,?,?)",
-        (user_id, action, entity, entity_id, detail, ip))
-    db.commit()
-    db.close()
+-- Query 2: date-based availability conflict check
+SELECT id
+FROM bookings
+WHERE vehicle_id = :vehicle_id
+  AND status NOT IN ('Cancelled','Returned')
+  AND NOT (return_date <= :pickup_date OR pickup_date >= :return_date);
+
+-- Query 3: revenue by category with aggregate, rounding, GROUP BY, and HAVING
+SELECT v.category,
+       COUNT(b.id) AS total_bookings,
+       ROUND(SUM(b.total_amount), 2) AS total_revenue,
+       ROUND(AVG(b.total_amount), 2) AS average_booking_value
+FROM vehicles v
+JOIN bookings b ON b.vehicle_id = v.id
+WHERE b.status IN ('Confirmed','Returned')
+GROUP BY v.category
+HAVING COUNT(b.id) >= 1
+ORDER BY total_revenue DESC;
+
+-- Query 4: customer penalty balance with join and sub-query
+SELECT u.name, u.email,
+       (SELECT COALESCE(SUM(p.amount), 0)
+        FROM penalties p
+        JOIN bookings b2 ON b2.id = p.booking_id
+        WHERE b2.user_id = u.id AND p.status = 'Unpaid') AS outstanding_balance
+FROM users u
+WHERE u.role = 'customer'
+ORDER BY outstanding_balance DESC
+LIMIT 10;
+
+-- Query 5: date functions for maintenance due soon
+SELECT make, model, license_plate, next_service_date
+FROM vehicles
+WHERE next_service_date IS NOT NULL
+  AND next_service_date <= date('now', '+30 days')
+ORDER BY next_service_date ASC;
+
+-- Query 6: character functions and variable-style parameter for promo validation
+SELECT code, description, discount_type, discount_value
+FROM promo_codes
+WHERE UPPER(code) = UPPER(TRIM(:promo_code))
+  AND active = 1
+  AND uses < max_uses
+  AND (expires_at IS NULL OR expires_at > datetime('now'));

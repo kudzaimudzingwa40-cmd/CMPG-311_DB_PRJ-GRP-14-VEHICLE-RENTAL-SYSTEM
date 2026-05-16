@@ -2,12 +2,14 @@ from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, jsonify, make_response)
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db, init_db, audit
+from vehicle_routes import vehicle_bp
 from datetime import datetime, date
 from functools import wraps
 import os, string, random, csv, io
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "driveflow-secret-2026")
+app.register_blueprint(vehicle_bp)
 
 # ── Decorators ──────────────────────────────────────────────────────────────
 def login_required(f):
@@ -37,8 +39,55 @@ def staff_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def customer_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get("role") != "customer":
+            flash("Use a customer account to rent vehicles.", "error")
+            if session.get("role") == "admin":
+                return redirect(url_for("admin_dashboard"))
+            if session.get("role") == "staff":
+                return redirect(url_for("staff_fleet"))
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
+
 def gen_ref(prefix="DRV"):
     return prefix + "-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+def parse_iso_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+def has_booking_conflict(db, vehicle_id, pickup, ret, exclude_booking_id=None):
+    query = """
+        SELECT id FROM bookings
+        WHERE vehicle_id=? AND status NOT IN ('Cancelled','Returned')
+        AND NOT (return_date <= ? OR pickup_date >= ?)
+    """
+    params = [vehicle_id, pickup, ret]
+    if exclude_booking_id:
+        query += " AND id != ?"
+        params.append(exclude_booking_id)
+    return db.execute(query, params).fetchone() is not None
+
+def sync_vehicle_status(db, vehicle_id):
+    vehicle = db.execute("SELECT status FROM vehicles WHERE id=?", (vehicle_id,)).fetchone()
+    if not vehicle or vehicle["status"] == "Maintenance":
+        return
+    today = date.today().isoformat()
+    active_now = db.execute("""
+        SELECT id FROM bookings
+        WHERE vehicle_id=? AND status='Confirmed'
+        AND pickup_date <= ? AND return_date > ?
+        LIMIT 1
+    """, (vehicle_id, today, today)).fetchone()
+    db.execute("UPDATE vehicles SET status=? WHERE id=?",
+        ("Rented" if active_now else "Available", vehicle_id))
 
 # ── Public ───────────────────────────────────────────────────────────────────
 @app.route("/")
@@ -63,20 +112,51 @@ def index():
 def vehicles():
     category = request.args.get("category","")
     search   = request.args.get("search","")
+    pickup   = request.args.get("pickup_date","").strip()
+    ret      = request.args.get("return_date","").strip()
+    p_date   = parse_iso_date(pickup)
+    r_date   = parse_iso_date(ret)
+    date_error = None
+    dates_valid = False
+    if pickup or ret:
+        if not pickup or not ret or not p_date or not r_date:
+            date_error = "Choose a valid pickup and return date to filter availability."
+        elif p_date < date.today():
+            date_error = "Pickup date cannot be in the past."
+        elif r_date <= p_date:
+            date_error = "Return date must be after pickup date."
+        else:
+            dates_valid = True
     db = get_db()
     q = "SELECT v.*, COALESCE(ROUND(AVG(r.rating),1),0) as avg_rating, COUNT(r.id) as review_count FROM vehicles v LEFT JOIN reviews r ON r.vehicle_id=v.id WHERE v.status != 'Maintenance'"
     params = []
     if category: q += " AND v.category=?"; params.append(category)
     if search:   q += " AND (v.make LIKE ? OR v.model LIKE ?)"; params += [f"%{search}%",f"%{search}%"]
+    if dates_valid:
+        q += """
+            AND NOT EXISTS (
+                SELECT 1 FROM bookings b
+                WHERE b.vehicle_id=v.id AND b.status NOT IN ('Cancelled','Returned')
+                AND NOT (b.return_date <= ? OR b.pickup_date >= ?)
+            )
+        """
+        params += [pickup, ret]
     q += " GROUP BY v.id ORDER BY v.category, v.daily_rate"
     cars = db.execute(q, params).fetchall()
     db.close()
-    return render_template("vehicles.html", vehicles=cars, selected_category=category, search=search)
+    if date_error:
+        flash(date_error, "error")
+    return render_template("vehicles.html", vehicles=cars, selected_category=category,
+        search=search, pickup_date=pickup, return_date=ret, dates_valid=dates_valid)
 
 @app.route("/vehicles/<int:vehicle_id>")
 def vehicle_detail(vehicle_id):
     db = get_db()
     vehicle = db.execute("SELECT * FROM vehicles WHERE id=?", (vehicle_id,)).fetchone()
+    if not vehicle:
+        db.close()
+        flash("Vehicle not found.", "error")
+        return redirect(url_for("vehicles"))
     reviews = db.execute("""
         SELECT rv.*, u.name as customer_name FROM reviews rv
         JOIN users u ON rv.user_id=u.id
@@ -90,7 +170,7 @@ def vehicle_detail(vehicle_id):
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        email = request.form["email"].strip()
+        email = request.form["email"].strip().lower()
         pwd   = request.form["password"]
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
@@ -109,9 +189,15 @@ def login():
 def register():
     if request.method == "POST":
         name    = request.form["name"].strip()
-        email   = request.form["email"].strip()
+        email   = request.form["email"].strip().lower()
         license = request.form["license"].strip()
         pwd     = request.form["password"]
+        if len(pwd) < 6:
+            flash("Password must be at least 6 characters.", "error")
+            return render_template("register.html")
+        if not name or not license:
+            flash("Name and license number are required.", "error")
+            return render_template("register.html")
         db = get_db()
         if db.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone():
             flash("Email already registered.", "error"); db.close()
@@ -140,6 +226,7 @@ def logout():
 # ── Customer Dashboard ───────────────────────────────────────────────────────
 @app.route("/dashboard")
 @login_required
+@customer_required
 def dashboard():
     db = get_db()
     bookings = db.execute("""
@@ -166,6 +253,7 @@ def dashboard():
 # ── Profile ──────────────────────────────────────────────────────────────────
 @app.route("/profile", methods=["GET","POST"])
 @login_required
+@customer_required
 def profile():
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
@@ -199,6 +287,7 @@ def profile():
 # ── Promo code validator ─────────────────────────────────────────────────────
 @app.route("/api/promo/<code>")
 @login_required
+@customer_required
 def validate_promo(code):
     db = get_db()
     promo = db.execute("""
@@ -215,32 +304,32 @@ def validate_promo(code):
 # ── Book ─────────────────────────────────────────────────────────────────────
 @app.route("/book/<int:vehicle_id>", methods=["GET","POST"])
 @login_required
+@customer_required
 def book(vehicle_id):
     db = get_db()
     vehicle = db.execute("SELECT * FROM vehicles WHERE id=?", (vehicle_id,)).fetchone()
     user    = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
-    if not vehicle or vehicle["status"] != "Available":
+    if not vehicle or vehicle["status"] == "Maintenance":
         flash("Vehicle not available.", "error"); db.close()
         return redirect(url_for("vehicles"))
 
     if request.method == "POST":
-        pickup = request.form["pickup_date"]; ret = request.form["return_date"]
-        p_date = datetime.strptime(pickup,"%Y-%m-%d").date()
-        r_date = datetime.strptime(ret,"%Y-%m-%d").date()
+        pickup = request.form["pickup_date"].strip()
+        ret = request.form["return_date"].strip()
+        p_date = parse_iso_date(pickup)
+        r_date = parse_iso_date(ret)
         promo_code  = request.form.get("promo_code","").strip().upper()
         use_points  = request.form.get("use_points") == "1"
         use_deposit = request.form.get("use_deposit") == "1"
 
-        if p_date < date.today():
+        if not p_date or not r_date:
+            flash("Choose valid pickup and return dates.", "error")
+        elif p_date < date.today():
             flash("Pickup date cannot be in the past.", "error")
         elif r_date <= p_date:
             flash("Return date must be after pickup date.", "error")
         else:
-            conflict = db.execute("""
-                SELECT id FROM bookings WHERE vehicle_id=? AND status NOT IN ('Cancelled','Returned')
-                AND NOT (return_date <= ? OR pickup_date >= ?)
-            """, (vehicle_id, pickup, ret)).fetchone()
-            if conflict:
+            if has_booking_conflict(db, vehicle_id, pickup, ret):
                 flash("Vehicle already booked for those dates.", "error")
             else:
                 days  = (r_date - p_date).days
@@ -258,6 +347,11 @@ def book(vehicle_id):
                         discount = min(discount, total)
                         promo_used = promo_code
                         db.execute("UPDATE promo_codes SET uses=uses+1 WHERE code=?", (promo_code,))
+                    else:
+                        flash("Promo code is invalid, expired, or below its minimum booking amount.", "error")
+                        db.close()
+                        return render_template("book.html", vehicle=vehicle, user=user,
+                            min_date=date.today().isoformat())
 
                 # Apply loyalty points (100 points = R10)
                 points_used = 0
@@ -268,7 +362,7 @@ def book(vehicle_id):
                     discount += points_discount
 
                 final_total = max(0, total - discount)
-                deposit = round(final_total * 0.2, 2) if use_deposit else 0
+                deposit = round(final_total * 0.2, 2) if use_deposit and final_total > 0 else 0
 
                 db.execute("""
                     INSERT INTO bookings (user_id,vehicle_id,pickup_date,return_date,
@@ -288,30 +382,41 @@ def book(vehicle_id):
                     session["points"] = user["loyalty_points"] - points_used
 
                 db.commit(); db.close()
-                audit(session["user_id"],"CREATE_BOOKING","bookings",bid,f"Vehicle {vehicle_id}, {pickup}→{ret}")
+                audit(session["user_id"],"CREATE_BOOKING","bookings",bid,f"Vehicle {vehicle_id}, {pickup} to {ret}")
                 flash(f"Booking created! {'Discount applied: R'+str(round(discount,2))+'. ' if discount>0 else ''}Please complete payment.", "info")
                 return redirect(url_for("payment", booking_id=bid))
 
     db.close()
-    return render_template("book.html", vehicle=vehicle, user=user)
+    return render_template("book.html", vehicle=vehicle, user=user,
+        min_date=date.today().isoformat())
 
 # ── Cancel booking ───────────────────────────────────────────────────────────
 @app.route("/cancel/<int:booking_id>", methods=["POST"])
 @login_required
+@customer_required
 def cancel_booking(booking_id):
     db = get_db()
     b = db.execute("SELECT * FROM bookings WHERE id=? AND user_id=?", (booking_id, session["user_id"])).fetchone()
-    if b and b["status"] in ("Confirmed","Awaiting Payment"):
+    pickup_date = parse_iso_date(b["pickup_date"]) if b else None
+    if not b:
+        flash("Booking not found.", "error")
+    elif b["status"] not in ("Confirmed","Awaiting Payment"):
+        flash("Only unpaid or confirmed bookings can be cancelled.", "error")
+    elif b["status"] == "Confirmed" and pickup_date and pickup_date <= date.today():
+        flash("This rental has already started. Please contact staff for return support.", "error")
+    else:
         db.execute("UPDATE bookings SET status='Cancelled' WHERE id=?", (booking_id,))
-        db.execute("UPDATE vehicles SET status='Available' WHERE id=?", (b["vehicle_id"],))
-        # Refund points if redeemed
-        if b["discount_amount"] > 0 and not b["promo_code"]:
-            refund_points = int(b["discount_amount"] / 10) * 100
-            if refund_points > 0:
-                db.execute("UPDATE users SET loyalty_points=loyalty_points+? WHERE id=?",
-                    (refund_points, session["user_id"]))
-                db.execute("INSERT INTO loyalty_transactions (user_id,points,type,description,booking_id) VALUES (?,?,?,?,?)",
-                    (session["user_id"], refund_points, "refund", "Points refunded — booking cancelled", booking_id))
+        sync_vehicle_status(db, b["vehicle_id"])
+        redeemed = db.execute("""
+            SELECT COALESCE(SUM(-points),0) FROM loyalty_transactions
+            WHERE booking_id=? AND user_id=? AND type='redeem' AND points < 0
+        """, (booking_id, session["user_id"])).fetchone()[0]
+        if redeemed > 0:
+            db.execute("UPDATE users SET loyalty_points=loyalty_points+? WHERE id=?",
+                (redeemed, session["user_id"]))
+            db.execute("INSERT INTO loyalty_transactions (user_id,points,type,description,booking_id) VALUES (?,?,?,?,?)",
+                (session["user_id"], redeemed, "refund", "Points refunded for cancelled booking", booking_id))
+            session["points"] = (session.get("points",0) or 0) + redeemed
         db.commit()
         audit(session["user_id"],"CANCEL_BOOKING","bookings",booking_id)
         flash("Booking cancelled.", "success")
@@ -321,6 +426,7 @@ def cancel_booking(booking_id):
 # ── Extend booking ───────────────────────────────────────────────────────────
 @app.route("/extend/<int:booking_id>", methods=["GET","POST"])
 @login_required
+@customer_required
 def extend_booking(booking_id):
     db = get_db()
     b = db.execute("""
@@ -334,17 +440,15 @@ def extend_booking(booking_id):
 
     if request.method == "POST":
         new_return = request.form["new_return_date"]
-        new_date   = datetime.strptime(new_return,"%Y-%m-%d").date()
-        old_date   = datetime.strptime(b["return_date"],"%Y-%m-%d").date()
-        if new_date <= old_date:
+        new_date   = parse_iso_date(new_return)
+        old_date   = parse_iso_date(b["return_date"])
+        if not new_date or not old_date:
+            flash("Choose a valid return date.", "error")
+        elif new_date <= old_date:
             flash("New return date must be after current return date.", "error")
         else:
             # Check for conflicts after original return date
-            conflict = db.execute("""
-                SELECT id FROM bookings WHERE vehicle_id=? AND id!=? AND status NOT IN ('Cancelled','Returned')
-                AND NOT (return_date <= ? OR pickup_date >= ?)
-            """, (b["vehicle_id"], booking_id, b["return_date"], new_return)).fetchone()
-            if conflict:
+            if has_booking_conflict(db, b["vehicle_id"], b["return_date"], new_return, booking_id):
                 flash("Vehicle is already booked for those extended dates by another customer.", "error")
             else:
                 extra_days = (new_date - old_date).days
@@ -362,11 +466,23 @@ def extend_booking(booking_id):
 # ── Waitlist ─────────────────────────────────────────────────────────────────
 @app.route("/waitlist/<int:vehicle_id>", methods=["POST"])
 @login_required
+@customer_required
 def join_waitlist(vehicle_id):
-    pickup = request.form["pickup_date"]; ret = request.form["return_date"]
+    pickup = request.form["pickup_date"].strip()
+    ret = request.form["return_date"].strip()
+    p_date = parse_iso_date(pickup)
+    r_date = parse_iso_date(ret)
+    if not p_date or not r_date or r_date <= p_date or p_date < date.today():
+        flash("Choose valid future dates before joining the waitlist.", "error")
+        return redirect(url_for("vehicles"))
     db = get_db()
-    db.execute("INSERT INTO waitlist (user_id,vehicle_id,requested_pickup,requested_return) VALUES (?,?,?,?)",
-        (session["user_id"], vehicle_id, pickup, ret))
+    existing = db.execute("""
+        SELECT id FROM waitlist
+        WHERE user_id=? AND vehicle_id=? AND requested_pickup=? AND requested_return=? AND status='Waiting'
+    """, (session["user_id"], vehicle_id, pickup, ret)).fetchone()
+    if not existing:
+        db.execute("INSERT INTO waitlist (user_id,vehicle_id,requested_pickup,requested_return) VALUES (?,?,?,?)",
+            (session["user_id"], vehicle_id, pickup, ret))
     db.commit(); db.close()
     flash("You've been added to the waitlist. We'll notify you when this vehicle becomes available.", "success")
     return redirect(url_for("dashboard"))
@@ -374,6 +490,7 @@ def join_waitlist(vehicle_id):
 # ── Payment ──────────────────────────────────────────────────────────────────
 @app.route("/pay/<int:booking_id>", methods=["GET","POST"])
 @login_required
+@customer_required
 def payment(booking_id):
     db = get_db()
     b = db.execute("""
@@ -386,17 +503,29 @@ def payment(booking_id):
     if b["status"] != "Awaiting Payment":
         flash("This booking has already been paid or cancelled.", "info"); db.close(); return redirect(url_for("dashboard"))
 
+    amount_due = b["deposit_amount"] if b["deposit_amount"] and b["deposit_status"] == "Pending" else b["total_amount"]
+
     if request.method == "POST":
         method     = request.form.get("method","Card")
-        card_num   = request.form.get("card_number","").replace(" ","")
+        if method not in ("Card", "EFT", "Cash"):
+            flash("Choose a valid payment method.", "error")
+            db.close()
+            return render_template("payment.html", booking=b, amount_due=amount_due)
+        card_num   = "".join(ch for ch in request.form.get("card_number","") if ch.isdigit())
+        if method == "Card" and not (12 <= len(card_num) <= 19):
+            flash("Enter a valid card number for card payments.", "error")
+            db.close()
+            return render_template("payment.html", booking=b, amount_due=amount_due)
         card_last4 = card_num[-4:] if card_num else "0000"
         reference  = gen_ref("DRV")
         db.execute("UPDATE bookings SET status='Confirmed' WHERE id=?", (booking_id,))
-        db.execute("UPDATE vehicles SET status='Rented' WHERE id=?", (b["vehicle_id"],))
+        if b["deposit_amount"] and b["deposit_status"] == "Pending":
+            db.execute("UPDATE bookings SET deposit_status='Paid' WHERE id=?", (booking_id,))
+        sync_vehicle_status(db, b["vehicle_id"])
         db.execute("INSERT INTO payments (booking_id,amount,method,card_last4,reference,status) VALUES (?,?,?,?,?,'Paid')",
-            (booking_id, b["total_amount"], method, card_last4, reference))
+            (booking_id, amount_due, method, card_last4, reference))
         # Earn loyalty points (1 point per R10 spent)
-        points_earned = int(b["total_amount"] / 10)
+        points_earned = int(amount_due / 10)
         if points_earned > 0:
             db.execute("UPDATE users SET loyalty_points=loyalty_points+? WHERE id=?",
                 (points_earned, session["user_id"]))
@@ -404,15 +533,16 @@ def payment(booking_id):
                 (session["user_id"], points_earned, "earn", f"Points earned for booking #{booking_id}", booking_id))
             session["points"] = (session.get("points",0) or 0) + points_earned
         db.commit(); db.close()
-        audit(session["user_id"],"PAYMENT","payments",booking_id,f"R{b['total_amount']} via {method}")
+        audit(session["user_id"],"PAYMENT","payments",booking_id,f"R{amount_due} via {method}")
         flash(f"Payment successful! You earned {points_earned} loyalty points.", "success")
         return redirect(url_for("receipt", booking_id=booking_id))
     db.close()
-    return render_template("payment.html", booking=b)
+    return render_template("payment.html", booking=b, amount_due=amount_due)
 
 # ── Receipt ──────────────────────────────────────────────────────────────────
 @app.route("/receipt/<int:booking_id>")
 @login_required
+@customer_required
 def receipt(booking_id):
     db = get_db()
     b = db.execute("""
@@ -430,6 +560,7 @@ def receipt(booking_id):
 # ── Reviews ──────────────────────────────────────────────────────────────────
 @app.route("/review/<int:booking_id>", methods=["GET","POST"])
 @login_required
+@customer_required
 def submit_review(booking_id):
     db = get_db()
     b = db.execute("""
@@ -461,6 +592,7 @@ def submit_review(booking_id):
 # ── Penalties (customer) ─────────────────────────────────────────────────────
 @app.route("/penalties")
 @login_required
+@customer_required
 def my_penalties():
     db = get_db()
     penalties = db.execute("""
@@ -480,6 +612,7 @@ def my_penalties():
 
 @app.route("/penalties/pay/<int:penalty_id>", methods=["GET","POST"])
 @login_required
+@customer_required
 def pay_penalty(penalty_id):
     db = get_db()
     penalty = db.execute("""
@@ -511,6 +644,7 @@ def pay_penalty(penalty_id):
 # ── Export bookings CSV ──────────────────────────────────────────────────────
 @app.route("/export/bookings")
 @login_required
+@customer_required
 def export_my_bookings():
     db = get_db()
     rows = db.execute("""
@@ -550,6 +684,9 @@ def staff_fleet():
 @staff_required
 def staff_update_status(vehicle_id):
     new_status = request.form["status"]
+    if new_status not in ("Available", "Rented", "Maintenance"):
+        flash("Invalid vehicle status.", "error")
+        return redirect(url_for("staff_fleet"))
     db = get_db()
     db.execute("UPDATE vehicles SET status=? WHERE id=?", (new_status, vehicle_id))
     db.commit(); db.close()
@@ -707,6 +844,9 @@ def admin_delete_vehicle(vehicle_id):
 @admin_required
 def update_vehicle_status(vehicle_id):
     ns = request.form["status"]
+    if ns not in ("Available", "Rented", "Maintenance"):
+        flash("Invalid vehicle status.", "error")
+        return redirect(url_for("admin_fleet"))
     db = get_db()
     db.execute("UPDATE vehicles SET status=? WHERE id=?", (ns, vehicle_id))
     db.commit(); db.close()
@@ -770,7 +910,8 @@ def admin_process_return(booking_id):
     agreed_date    = datetime.strptime(b["return_date"],"%Y-%m-%d").date()
     actual_date    = datetime.strptime(actual_return,"%Y-%m-%d").date()
     days_late      = max(0,(actual_date - agreed_date).days)
-    db.execute("INSERT OR REPLACE INTO returns (booking_id,actual_return_date,condition,notes,days_late,return_mileage,processed_by) VALUES (?,?,?,?,?,?,?)",
+    db.execute("DELETE FROM returns WHERE booking_id=?", (booking_id,))
+    db.execute("INSERT INTO returns (booking_id,actual_return_date,condition,notes,days_late,return_mileage,processed_by) VALUES (?,?,?,?,?,?,?)",
         (booking_id, actual_return, condition, notes, days_late, return_mileage, session["user_id"]))
     if return_mileage > 0:
         db.execute("UPDATE vehicles SET mileage=? WHERE id=?", (return_mileage, b["vid"]))
@@ -782,10 +923,10 @@ def admin_process_return(booking_id):
              late_total, days_late, "Unpaid", session["user_id"],
              f"Agreed: {b['return_date']}. Actual: {actual_return}."))
         flash(f"Late return penalty: R{late_total:,.2f}", "error")
-    if condition in ("Minor Damage","Major Damage"):
-        dmg = {"Minor Damage":1500.0,"Major Damage":5000.0}[condition]
+    if condition == "Damaged":
+        dmg = float(request.form.get("damage_amount",1500) or 1500)
         db.execute("INSERT INTO penalties (booking_id,type,description,amount,status,issued_by,notes) VALUES (?,?,?,?,?,?,?)",
-            (booking_id,"Damage",f"Vehicle returned with {condition.lower()}",dmg,"Unpaid",session["user_id"],notes or ""))
+            (booking_id,"Damage","Vehicle returned damaged",dmg,"Unpaid",session["user_id"],notes or ""))
         flash(f"Damage fee issued: R{dmg:,.2f}", "error")
     db.execute("UPDATE bookings SET status='Returned' WHERE id=?", (booking_id,))
     db.execute("UPDATE vehicles SET status='Available' WHERE id=?", (b["vid"],))
@@ -929,7 +1070,7 @@ def admin_delete_customer(user_id):
         flash(f"Customer '{customer['name']}' permanently deleted.", "success")
     else:
         import hashlib, time
-        anon = hashlib.md5(f"{uid}-{time.time()}".encode()).hexdigest()[:10]
+        anon = hashlib.md5(f"{user_id}-{time.time()}".encode()).hexdigest()[:10]
         db.execute("UPDATE users SET name='[Deleted User]', email=?, license_number='ANONYMISED', password_hash='DELETED' WHERE id=?",
             (f"deleted-{anon}@driveflow.invalid", user_id))
         flash(f"Customer '{customer['name']}' anonymised.", "success")

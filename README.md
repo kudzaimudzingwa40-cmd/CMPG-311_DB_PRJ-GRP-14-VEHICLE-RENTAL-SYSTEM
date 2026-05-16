@@ -31,6 +31,15 @@ http://127.0.0.1:5000/
 ## Demo Accounts
 
 ```text
+Customer: customer@driveflow.com / customer123
 Admin: admin@driveflow.com / admin123
 Staff: staff@driveflow.com / staff123
+```
+
+## Verified Rental Flow
+
+Customers can register or sign in with the customer demo account, search for date-based availability, reserve a vehicle, apply promo codes or loyalty points, and complete payment. Admin and staff accounts are role-gated for operations dashboards only, while customer rental actions are restricted to customer accounts.
+
+```bash
+python -m unittest discover -s tests
 ```

@@ -7,8 +7,8 @@
         <p class="eyebrow">Reserve your car</p>
         <h1>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
         <div class="form-grid">
-            <label><span>Pick-up date</span><input type="date" name="pickup_date" value="{{ request.args.get('pickup_date','') }}" required></label>
-            <label><span>Return date</span><input type="date" name="return_date" value="{{ request.args.get('return_date','') }}" required></label>
+            <label><span>Pick-up date</span><input type="date" name="pickup_date" min="{{ min_date }}" value="{{ request.args.get('pickup_date','') }}" required></label>
+            <label><span>Return date</span><input type="date" name="return_date" min="{{ min_date }}" value="{{ request.args.get('return_date','') }}" required></label>
             <label><span>Promo code</span><input type="text" name="promo_code" placeholder="WELCOME10"></label>
         </div>
         <label class="option-row"><input type="checkbox" name="use_points" value="1"> Use available loyalty points{% if user %} ({{ user.loyalty_points }} pts){% endif %}</label>
@@ -19,6 +19,9 @@
         <div class="summary-image" style="background-image: url('{{ vehicle.image_url or 'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=900&q=80' }}')"></div>
         <h2>{{ vehicle.make }} {{ vehicle.model }}</h2>
         <p class="muted">{{ vehicle.category }} · R{{ "%.2f"|format(vehicle.daily_rate) }} per day</p>
+        {% if vehicle.status == 'Rented' %}
+            <p class="notice-text">This car has active rentals. Pick dates outside existing bookings to reserve it.</p>
+        {% endif %}
         <ul class="check-list">
             <li>Availability checked before checkout</li>
             <li>Promo and points applied automatically</li>

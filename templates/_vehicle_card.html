@@ -1,12 +1,12 @@
 <article class="vehicle-card">
-    <a class="vehicle-image" href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" style="background-image: url('{{ vehicle.image_url or 'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=900&q=80' }}')">
+    <a class="vehicle-image" href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id, pickup_date=request.args.get('pickup_date',''), return_date=request.args.get('return_date','')) }}" style="background-image: url('{{ vehicle.image_url or 'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=900&q=80' }}')">
         <span>{{ vehicle.category }}</span>
     </a>
     <div class="vehicle-card-body">
         <div>
             <p class="rating-line">{{ vehicle.avg_rating or 4.6 }} / 5{% if vehicle.review_count is defined %} · {{ vehicle.review_count }} reviews{% endif %}</p>
             <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
-            <p class="muted">{{ vehicle.license_plate }} · {{ vehicle.mileage or 0 }} km · Unlimited local support</p>
+            <p class="muted">{{ vehicle.license_plate }} · {{ vehicle.mileage or 0 }} km · {{ vehicle.status }}</p>
         </div>
         <ul class="perk-list">
             <li>Free cancellation before payment</li>

@@ -13,7 +13,7 @@
             <strong>R{{ "%.2f"|format(vehicle.daily_rate) }}</strong>
             <span>per day</span>
         </div>
-        <a class="button" href="{{ url_for('book', vehicle_id=vehicle.id) }}">Book this car</a>
+        <a class="button" href="{{ url_for('book', vehicle_id=vehicle.id, pickup_date=request.args.get('pickup_date',''), return_date=request.args.get('return_date','')) }}">Book this car</a>
     </div>
 </section>
 

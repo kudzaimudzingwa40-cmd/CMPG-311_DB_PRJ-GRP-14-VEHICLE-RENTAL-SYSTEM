@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Vehicle availability | DriveFlow Rental{% endblock %}
+
+{% block content %}
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Fleet availability</p>
+        <h1>Vehicle booking calendar</h1>
+    </div>
+    <a class="button small" href="{{ url_for('vehicles') }}">Browse cars</a>
+</section>
+
+<section class="table-panel">
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle</th>
+                <th>Plate</th>
+                <th>Status</th>
+                <th>Next booked period</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for vehicle in vehicles %}
+            <tr>
+                <td>{{ vehicle.vehicle_name }}</td>
+                <td>{{ vehicle.license_plate }}</td>
+                <td>{{ vehicle.status }}</td>
+                <td>
+                    {% if vehicle.next_booking_start %}
+                        {{ vehicle.next_booking_start }} to {{ vehicle.next_booking_return }}
+                    {% else %}
+                        No upcoming booking
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4">No vehicles found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

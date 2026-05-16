@@ -28,6 +28,11 @@
                 <strong>R{{ "%.2f"|format(booking.total_amount) }}</strong>
                 {% if booking.status == 'Awaiting Payment' %}<a class="button small" href="{{ url_for('payment', booking_id=booking.id) }}">Pay now</a>{% endif %}
                 {% if booking.status == 'Confirmed' %}<a class="button small secondary" href="{{ url_for('extend_booking', booking_id=booking.id) }}">Extend</a>{% endif %}
+                {% if booking.status in ['Awaiting Payment', 'Confirmed'] %}
+                    <form method="post" action="{{ url_for('cancel_booking', booking_id=booking.id) }}" class="inline-form">
+                        <button class="button small secondary" type="submit">Cancel</button>
+                    </form>
+                {% endif %}
                 {% if booking.status == 'Returned' and not booking.has_review %}<a class="button small secondary" href="{{ url_for('submit_review', booking_id=booking.id) }}">Review</a>{% endif %}
             </div>
         </article>

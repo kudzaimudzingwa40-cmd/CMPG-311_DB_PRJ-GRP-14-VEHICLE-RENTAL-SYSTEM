@@ -11,8 +11,8 @@
                 <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
             {% endfor %}
         </select>
-        <input type="date" name="pickup_date" value="{{ request.args.get('pickup_date','') }}">
-        <input type="date" name="return_date" value="{{ request.args.get('return_date','') }}">
+        <input type="date" name="pickup_date" value="{{ pickup_date }}">
+        <input type="date" name="return_date" value="{{ return_date }}">
         <button type="submit">Update search</button>
     </form>
 </section>
@@ -20,10 +20,10 @@
 <section class="results-layout">
     <aside class="filter-panel">
         <h2>Refine results</h2>
-        <a class="{% if not selected_category %}active{% endif %}" href="{{ url_for('vehicles', search=search) }}">All cars</a>
-        <a class="{% if selected_category == 'Economy' %}active{% endif %}" href="{{ url_for('vehicles', category='Economy', search=search) }}">Economy</a>
-        <a class="{% if selected_category == 'SUV' %}active{% endif %}" href="{{ url_for('vehicles', category='SUV', search=search) }}">SUV</a>
-        <a class="{% if selected_category == 'Luxury' %}active{% endif %}" href="{{ url_for('vehicles', category='Luxury', search=search) }}">Luxury</a>
+        <a class="{% if not selected_category %}active{% endif %}" href="{{ url_for('vehicles', search=search, pickup_date=pickup_date, return_date=return_date) }}">All cars</a>
+        <a class="{% if selected_category == 'Economy' %}active{% endif %}" href="{{ url_for('vehicles', category='Economy', search=search, pickup_date=pickup_date, return_date=return_date) }}">Economy</a>
+        <a class="{% if selected_category == 'SUV' %}active{% endif %}" href="{{ url_for('vehicles', category='SUV', search=search, pickup_date=pickup_date, return_date=return_date) }}">SUV</a>
+        <a class="{% if selected_category == 'Luxury' %}active{% endif %}" href="{{ url_for('vehicles', category='Luxury', search=search, pickup_date=pickup_date, return_date=return_date) }}">Luxury</a>
         <div class="trust-box">
             <strong>No hidden fees</strong>
             <span>Daily rate, discounts, deposit, and total are shown before payment.</span>
@@ -34,7 +34,7 @@
         <div class="section-heading tight">
             <div>
                 <p class="eyebrow">Search results</p>
-                <h1>{{ vehicles|length }} cars available</h1>
+                <h1>{{ vehicles|length }} cars available{% if dates_valid %} for your dates{% endif %}</h1>
             </div>
             <a href="{{ url_for('index') }}">New search</a>
         </div>

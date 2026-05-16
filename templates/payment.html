@@ -9,16 +9,19 @@
         <label><span>Payment method</span><select name="method"><option>Card</option><option>EFT</option><option>Cash</option></select></label>
         <label><span>Card number</span><input name="card_number" inputmode="numeric" placeholder="4242 4242 4242 4242"></label>
         <div class="form-grid">
-            <label><span>Expiry</span><input placeholder="MM/YY"></label>
-            <label><span>CVV</span><input placeholder="123"></label>
+            <label><span>Expiry</span><input name="expiry" placeholder="MM/YY"></label>
+            <label><span>CVV</span><input name="cvv" inputmode="numeric" placeholder="123"></label>
         </div>
-        <button class="button" type="submit">Pay R{{ "%.2f"|format(booking.total_amount) }}</button>
+        <button class="button" type="submit">Pay R{{ "%.2f"|format(amount_due) }}</button>
     </form>
     <aside class="summary-card">
         <h2>Booking summary</h2>
         <p><strong>{{ booking.year }} {{ booking.make }} {{ booking.model }}</strong></p>
         <p class="muted">{{ booking.pickup_date }} to {{ booking.return_date }}</p>
         <div class="summary-total"><span>Total due</span><strong>R{{ "%.2f"|format(booking.total_amount) }}</strong></div>
+        {% if booking.deposit_amount and booking.deposit_status == 'Pending' %}
+            <p class="notice-text">Deposit due now: R{{ "%.2f"|format(amount_due) }}. Remaining balance is handled at pickup.</p>
+        {% endif %}
         {% if booking.discount_amount %}<p class="success-text">Discount applied: R{{ "%.2f"|format(booking.discount_amount) }}</p>{% endif %}
     </aside>
 </section>

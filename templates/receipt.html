@@ -14,8 +14,10 @@
         <div>
             <span>Reference</span>
             <strong>{{ payment.reference }}</strong>
-            <span>Total paid</span>
+            <span>Amount paid</span>
             <strong>R{{ "%.2f"|format(payment.amount) }}</strong>
+            <span>Booking total</span>
+            <strong>R{{ "%.2f"|format(booking.total_amount) }}</strong>
         </div>
     </div>
     <a class="button" href="{{ url_for('dashboard') }}">View my trips</a>

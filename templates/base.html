@@ -15,9 +15,10 @@
         <nav class="nav-links" aria-label="Main navigation">
             <a href="{{ url_for('vehicles') }}">Cars</a>
             {% if session.user_id %}
-                <a href="{{ url_for('dashboard') }}">Trips</a>
-                <a href="{{ url_for('my_penalties') }}">Penalties</a>
-                {% if session.role == 'admin' %}
+                {% if session.role == 'customer' %}
+                    <a href="{{ url_for('dashboard') }}">Trips</a>
+                    <a href="{{ url_for('my_penalties') }}">Penalties</a>
+                {% elif session.role == 'admin' %}
                     <a href="{{ url_for('admin_dashboard') }}">Admin</a>
                 {% elif session.role == 'staff' %}
                     <a href="{{ url_for('staff_fleet') }}">Staff</a>
