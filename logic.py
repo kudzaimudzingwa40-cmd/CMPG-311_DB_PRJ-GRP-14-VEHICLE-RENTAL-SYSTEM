@@ -55,6 +55,20 @@ def customer_required(f):
 def gen_ref(prefix="DRV"):
     return prefix + "-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
+# FIX #5: Loyalty points were manually patched in session across many routes,
+# which meant any code path that forgot to update session["points"] would show
+# a stale counter in the navbar until the customer re-logged.
+# Solution: refresh points from the DB once per request for logged-in customers.
+@app.before_request
+def refresh_session_points():
+    if session.get("role") == "customer" and session.get("user_id"):
+        db = get_db()
+        row = db.execute("SELECT loyalty_points FROM users WHERE id=?",
+                         (session["user_id"],)).fetchone()
+        db.close()
+        if row:
+            session["points"] = row["loyalty_points"]
+
 def parse_iso_date(value):
     if not value:
         return None
@@ -86,8 +100,19 @@ def sync_vehicle_status(db, vehicle_id):
         AND pickup_date <= ? AND return_date > ?
         LIMIT 1
     """, (vehicle_id, today, today)).fetchone()
-    db.execute("UPDATE vehicles SET status=? WHERE id=?",
-        ("Rented" if active_now else "Available", vehicle_id))
+    new_status = "Rented" if active_now else "Available"
+    db.execute("UPDATE vehicles SET status=? WHERE id=?", (new_status, vehicle_id))
+
+    # FIX #7: When a vehicle becomes Available, advance any 'Waiting' waitlist
+    # entries whose requested dates are still in the future to 'Notified'.
+    # In a production system this would trigger an email; here we mark the
+    # record so the customer can see it on their dashboard.
+    if new_status == "Available":
+        db.execute("""
+            UPDATE waitlist SET status='Notified'
+            WHERE vehicle_id=? AND status='Waiting'
+            AND requested_pickup >= ?
+        """, (vehicle_id, today))
 
 # ── Public ───────────────────────────────────────────────────────────────────
 @app.route("/")
@@ -245,10 +270,19 @@ def dashboard():
     points_history = db.execute(
         "SELECT * FROM loyalty_transactions WHERE user_id=? ORDER BY created_at DESC LIMIT 10",
         (session["user_id"],)).fetchall()
+    # FIX #7: Surface waitlist notifications so the customer can see which
+    # vehicles have become available for their requested dates.
+    waitlist_notifications = db.execute("""
+        SELECT w.*, v.make, v.model, v.category, v.daily_rate
+        FROM waitlist w JOIN vehicles v ON w.vehicle_id=v.id
+        WHERE w.user_id=? AND w.status='Notified'
+        ORDER BY w.created_at DESC
+    """, (session["user_id"],)).fetchall()
     user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
     db.close()
     return render_template("dashboard.html", bookings=bookings,
-        all_penalties=all_penalties, points_history=points_history, user=user)
+        all_penalties=all_penalties, points_history=points_history,
+        waitlist_notifications=waitlist_notifications, user=user)
 
 # ── Profile ──────────────────────────────────────────────────────────────────
 @app.route("/profile", methods=["GET","POST"])
@@ -379,7 +413,6 @@ def book(vehicle_id):
                         (points_used, session["user_id"]))
                     db.execute("INSERT INTO loyalty_transactions (user_id,points,type,description,booking_id) VALUES (?,?,?,?,?)",
                         (session["user_id"], -points_used, "redeem", f"Points redeemed for booking #{bid}", bid))
-                    session["points"] = user["loyalty_points"] - points_used
 
                 db.commit(); db.close()
                 audit(session["user_id"],"CREATE_BOOKING","bookings",bid,f"Vehicle {vehicle_id}, {pickup} to {ret}")
@@ -416,7 +449,6 @@ def cancel_booking(booking_id):
                 (redeemed, session["user_id"]))
             db.execute("INSERT INTO loyalty_transactions (user_id,points,type,description,booking_id) VALUES (?,?,?,?,?)",
                 (session["user_id"], redeemed, "refund", "Points refunded for cancelled booking", booking_id))
-            session["points"] = (session.get("points",0) or 0) + redeemed
         db.commit()
         audit(session["user_id"],"CANCEL_BOOKING","bookings",booking_id)
         flash("Booking cancelled.", "success")
@@ -455,6 +487,9 @@ def extend_booking(booking_id):
                 extra_cost = extra_days * b["daily_rate"]
                 db.execute("UPDATE bookings SET return_date=?, total_amount=total_amount+? WHERE id=?",
                     (new_return, extra_cost, booking_id))
+                # FIX #4: Sync vehicle status after extension — the new return date
+                # may change whether the vehicle is currently 'Rented' or 'Available'.
+                sync_vehicle_status(db, b["vehicle_id"])
                 db.commit()
                 audit(session["user_id"],"EXTEND_BOOKING","bookings",booking_id,f"Extended to {new_return}, +R{extra_cost}")
                 db.close()
@@ -511,12 +546,25 @@ def payment(booking_id):
             flash("Choose a valid payment method.", "error")
             db.close()
             return render_template("payment.html", booking=b, amount_due=amount_due)
-        card_num   = "".join(ch for ch in request.form.get("card_number","") if ch.isdigit())
+
+        # FIX #6: Validate all payment methods, not just Card.
+        card_num = "".join(ch for ch in request.form.get("card_number","") if ch.isdigit())
         if method == "Card" and not (12 <= len(card_num) <= 19):
             flash("Enter a valid card number for card payments.", "error")
             db.close()
             return render_template("payment.html", booking=b, amount_due=amount_due)
-        card_last4 = card_num[-4:] if card_num else "0000"
+        eft_ref = request.form.get("eft_reference","").strip()
+        if method == "EFT" and not eft_ref:
+            flash("Enter your EFT proof-of-payment reference number.", "error")
+            db.close()
+            return render_template("payment.html", booking=b, amount_due=amount_due)
+        cash_confirm = request.form.get("cash_confirm","")
+        if method == "Cash" and cash_confirm != "1":
+            flash("Please confirm that cash has been handed over at the counter.", "error")
+            db.close()
+            return render_template("payment.html", booking=b, amount_due=amount_due)
+
+        card_last4 = card_num[-4:] if card_num else None
         reference  = gen_ref("DRV")
         db.execute("UPDATE bookings SET status='Confirmed' WHERE id=?", (booking_id,))
         if b["deposit_amount"] and b["deposit_status"] == "Pending":
@@ -531,7 +579,6 @@ def payment(booking_id):
                 (points_earned, session["user_id"]))
             db.execute("INSERT INTO loyalty_transactions (user_id,points,type,description,booking_id) VALUES (?,?,?,?,?)",
                 (session["user_id"], points_earned, "earn", f"Points earned for booking #{booking_id}", booking_id))
-            session["points"] = (session.get("points",0) or 0) + points_earned
         db.commit(); db.close()
         audit(session["user_id"],"PAYMENT","payments",booking_id,f"R{amount_due} via {method}")
         flash(f"Payment successful! You earned {points_earned} loyalty points.", "success")
@@ -740,11 +787,13 @@ def admin_dashboard():
             SUM(status='Maintenance') as maintenance
         FROM vehicles
     """).fetchone()
+    # FIX #3: Revenue must include 'Returned' bookings — completed rentals are
+    # moved to 'Returned', so counting only 'Confirmed' understates total revenue.
     _bs = db.execute("""
         SELECT
             COUNT(*) as total,
             SUM(status='Confirmed') as active,
-            COALESCE(SUM(CASE WHEN status='Confirmed' THEN total_amount ELSE 0 END),0) as revenue
+            COALESCE(SUM(CASE WHEN status IN ('Confirmed','Returned') THEN total_amount ELSE 0 END),0) as revenue
         FROM bookings
     """).fetchone()
     stats = {
@@ -764,10 +813,10 @@ def admin_dashboard():
         FROM bookings b JOIN users u ON b.user_id=u.id JOIN vehicles v ON b.vehicle_id=v.id
         ORDER BY b.created_at DESC LIMIT 8
     """).fetchall()
-    # Revenue last 6 months for chart
+    # FIX #3: Include Returned bookings in monthly revenue chart.
     monthly_chart = db.execute("""
         SELECT strftime('%Y-%m', created_at) as month, COALESCE(SUM(total_amount),0) as revenue
-        FROM bookings WHERE status='Confirmed'
+        FROM bookings WHERE status IN ('Confirmed','Returned')
         GROUP BY month ORDER BY month DESC LIMIT 6
     """).fetchall()
     db.close()
@@ -833,6 +882,31 @@ def admin_edit_vehicle(vehicle_id):
 @admin_required
 def admin_delete_vehicle(vehicle_id):
     db = get_db()
+    vehicle = db.execute("SELECT * FROM vehicles WHERE id=?", (vehicle_id,)).fetchone()
+    if not vehicle:
+        flash("Vehicle not found.", "error")
+        db.close()
+        return redirect(url_for("admin_fleet"))
+
+    # FIX #8: Guard against orphaning related records.  Since FK enforcement
+    # depends on runtime PRAGMA (and SQLite won't cascade-delete automatically),
+    # we explicitly block deletion when dependent rows exist.
+    active_bookings = db.execute(
+        "SELECT COUNT(*) FROM bookings WHERE vehicle_id=? AND status NOT IN ('Cancelled','Returned')",
+        (vehicle_id,)).fetchone()[0]
+    if active_bookings > 0:
+        flash(f"Cannot delete — {active_bookings} active or pending booking(s) exist for this vehicle.", "error")
+        db.close()
+        return redirect(url_for("admin_fleet"))
+
+    total_bookings = db.execute(
+        "SELECT COUNT(*) FROM bookings WHERE vehicle_id=?", (vehicle_id,)).fetchone()[0]
+    if total_bookings > 0:
+        flash(f"Cannot delete — {total_bookings} historical booking record(s) are linked to this vehicle. "
+              "Retire the vehicle by setting its status to Maintenance instead.", "error")
+        db.close()
+        return redirect(url_for("admin_fleet"))
+
     db.execute("DELETE FROM vehicles WHERE id=?", (vehicle_id,))
     db.commit(); db.close()
     audit(session["user_id"],"DELETE_VEHICLE","vehicles",vehicle_id)
